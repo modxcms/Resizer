@@ -1,0 +1,17 @@
+Resizer Changelog
+
+v0.2.0  [25.08.2013]
+--------------------
+
+- Convert to a separate package
+- Add scale and strip options
+- Integrate latest Imagine repo
+- Improve error handling
+- Add more debug info
+- Various minor improvements
+
+
+v0.1.0
+------
+
+- Initial Release
