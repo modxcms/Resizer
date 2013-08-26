@@ -20,7 +20,7 @@
  **/
 
 function resizerLoader($class) {
-	include_once MODX_CORE_PATH . 'components/resizer/model/' . str_replace('\\', '/', $class) . '.php';
+	@include_once MODX_CORE_PATH . 'components/resizer/model/' . str_replace('\\', '/', $class) . '.php';
 }
 spl_autoload_register('\resizerLoader');
 
