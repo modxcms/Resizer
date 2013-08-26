@@ -1,7 +1,7 @@
 Resizer v0.2
 ==========
 
-A light-weight, modern image resizer for MODX. Built on [Imagine](https://github.com/avalanche123/Imagine), Resizer supports the Gmagick, Imagick and GD extensions and is considerably faster than phpThumb for image sizing and cropping operations.
+A lightweight, modern image resizer for MODX. Built on [Imagine](https://github.com/avalanche123/Imagine), Resizer supports the Gmagick, Imagick and GD extensions and is considerably faster than phpThumb for image sizing and cropping operations.
 
 Requirements
 -----------
@@ -23,7 +23,7 @@ Change the ```phpthumbof.use_resizer``` system setting to Yes to enable Resizer 
 Sample code:
 
     $modx->loadClass('Resizer', MODX_CORE_PATH . 'components/resizer/model/', true, true);
-    $resizer = new Resizer();
+    $resizer = new Resizer($modx);  // pass in the modX object
     $resizer->debug = TRUE;  // (optional) Enable debugging messages.
     $resizer->processImage(
     	'/full/path/input-image.png',  // input image file. Path can be absolute or relative to MODX_BASE_PATH
