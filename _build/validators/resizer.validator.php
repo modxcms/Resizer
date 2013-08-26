@@ -32,36 +32,37 @@ if ($object->xpdo) {
 			/* return false if conditions are not met */
 			$modx->log(xPDO::LOG_LEVEL_INFO, '[Resizer]');
 			if (version_compare(PHP_VERSION, '5.3.2', '>=')) {
-				$phpver = true;
+				// $phpver = true;
 				$modx->log(xPDO::LOG_LEVEL_INFO, 'PHP version: ' . PHP_VERSION . ' [<b>OK</b>]');
 			}
 			else {
-				$phpver = false;
+				// $phpver = false;
 				$modx->log(xPDO::LOG_LEVEL_INFO, 'PHP version: ' . PHP_VERSION);
 				$modx->log(xPDO::LOG_LEVEL_ERROR, 'Resizer requires PHP 5.3.2 or higher');
 			}
 
-			$success = false;
+			$success = FALSE;
 			$modx->log(xPDO::LOG_LEVEL_INFO,'Availabe graphics libraries:');
 			if (class_exists('Gmagick', FALSE)) {
 				$version = Gmagick::getversion();
 				$modx->log(xPDO::LOG_LEVEL_INFO, "* {$version['versionString']}");
-				$success = true;
+				$success = TRUE;
 			}
 			if (class_exists('Imagick', FALSE)) {
 				$version = Imagick::getVersion();
 				$modx->log(xPDO::LOG_LEVEL_INFO, "* {$version['versionString']}");
-				$success = true;
+				$success = TRUE;
 			}
 			if (function_exists('gd_info'))  {
 				$version = gd_info();
 				$modx->log(xPDO::LOG_LEVEL_INFO, "* GD: {$version['GD Version']}");
-				$success = true;
+				$success = TRUE;
 			}
 			if (!$success) {
 				$modx->log(xPDO::LOG_LEVEL_ERROR,'Resizer requires one of the following PHP extensions: Gmagick, Imagick, GD.');
 			}
-			$success = $success && $phpver;
+			// $success = $success && $phpver;
+			$success = TRUE;  // keep Resizer from preventing the install of a package which includes it
 
 			/* [[+code]] */
 			break;
