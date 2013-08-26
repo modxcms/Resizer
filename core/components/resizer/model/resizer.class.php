@@ -29,6 +29,7 @@ use Imagine\Image\Box;
 
 class Resizer {
 
+private $modx;
 private $imagine;
 private $srgb;
 private $basePathPlusUrl;
@@ -54,12 +55,14 @@ public $debugmessages = array('Resizer v0.2');
 public $debug = FALSE;  //enable generation of debugging messages
 
 /*
+ * @param  modX $modx
  * @param  int  $graphicsLib  (optional) specify a preferred graphics library
  *							  2: Auto/Gmagick, 1: Imagick, 0: GD
  */
-public function __construct($graphicsLib = TRUE) {
+public function __construct(modX &$modx, $graphicsLib = TRUE) {
+	$this->modx =& $modx;
 	if ($graphicsLib === TRUE) {  // if a preference isn't specified, get it from system settings
-		$graphicsLib = $modx->getOption('resizer.graphics_library', $options, 2);
+		$graphicsLib = $this->modx->getOption('resizer.graphics_library', NULL, 2);
 	}
 	// Decide which graphics library to use and create the appropriate Imagine object
 	if (class_exists('Gmagick', FALSE) && $graphicsLib > 1) {
