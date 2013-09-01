@@ -51,7 +51,7 @@ private function findFile($src) {
 }
 
 
-public $debugmessages = array('Resizer v0.2');
+public $debugmessages = array('Resizer v0.2.0-pl');
 public $debug = FALSE;  //enable generation of debugging messages
 
 /*

@@ -1,6 +1,12 @@
 Resizer Changelog
 
-v0.2.0  [25.08.2013]
+v0.2.0-pl  [01.09.2013]
+-----------------------
+
+- Merge latest Imagine commits
+
+
+v0.2.0-rc1  [25.08.2013]
 --------------------
 
 - Convert to a separate package
