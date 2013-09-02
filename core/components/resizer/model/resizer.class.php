@@ -254,6 +254,17 @@ public function processImage($input, $output, $options = array()) {
 			if ( ($width < $origWidth && $height < $origHeight) || !empty($options['aoe']) ) {
 				$image->scale(new Imagine\Image\Box($width, $height));
 			}
+			elseif (isset($options['qmax']) && empty($options['aoe']) && isset($options['q']) && $options['qmax'] > $options['q']) {
+				// undersized image. We'll increase q towards qmax depending on how much it's undersized
+				$sizeRatio = $origWidth * $origHeight / (isset($wRequested) ? ($wRequested * $hRequested) : ($width * $height));
+				if ($sizeRatio > 0.25) {  // if new image has more that 1/4 the resolution of the
+					$options['q'] += round(($options['qmax'] - $options['q']) * (1 - $sizeRatio) / 0.75);
+				}
+				else {  // otherwise qmax
+					$options['q'] = $options['qmax'];
+				}
+			}
+
 			if (isset($cropBox)) {
 				$image->crop($cropStart, $cropBox);
 			}
