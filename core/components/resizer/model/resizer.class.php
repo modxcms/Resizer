@@ -102,7 +102,10 @@ public function resetDebug() {
  * Returns TRUE/FALSE or success/failure
  */
 public function processImage($input, $output, $options = array()) {
-	$startTime = microtime(TRUE);
+	if ($this->debug) {
+		$optionsOriginal = is_string($options) ? parse_str($options) : $options;
+		$startTime = microtime(TRUE);
+	}
 	if ( !file_exists($input) && !($input = $this->findFile($input)) ) {
 		$this->debugmessages[] = "No such file: $input  ** Skipping **";
 		return FALSE;
@@ -242,16 +245,9 @@ public function processImage($input, $output, $options = array()) {
 				$height = $newHeight;
 			}
 
-
-			if ($this->debug) {
-				$this->debugmessages[] = substr(var_export($options, TRUE), 7, -3);  // print all options, stripping off array()
-				$this->debugmessages[] = "\nOriginal - w: $origWidth | h: $origHeight " . sprintf("(%2.2f MP)", $origWidth * $origHeight / 1e6) .
-					"\nNew - w: $width | h: $height" .
-					(isset($cropWidth) ? "\nCrop Box - w: $cropWidth | h: $cropHeight\nCrop Start - x: $cropStartX | y: $cropStartY" : '');
-			}
-
 			if ( ($width < $origWidth && $height < $origHeight) || !empty($options['aoe']) ) {
 				$image->scale(new Imagine\Image\Box($width, $height));
+				$didScale = TRUE;
 			}
 			elseif (isset($options['qmax']) && empty($options['aoe']) && isset($options['q']) && $options['qmax'] > $options['q']) {
 				// undersized image. We'll increase q towards qmax depending on how much it's undersized
@@ -267,6 +263,15 @@ public function processImage($input, $output, $options = array()) {
 			if (isset($cropBox)) {
 				$image->crop($cropStart, $cropBox);
 			}
+
+			if ($this->debug) {
+				$this->debugmessages[] = 'Input options:' . substr(var_export($optionsOriginal, TRUE), 7, -3);  // print all options, stripping off array()
+				$this->debugmessages[] = 'Output options:' . substr(var_export($options, TRUE), 7, -3);
+				$this->debugmessages[] = "\nOriginal - w: $origWidth | h: $origHeight " . sprintf("(%2.2f MP)", $origWidth * $origHeight / 1e6) .
+					"\nRequested - w: $wRequested | h: $hRequested" .
+					"\nNew - w: $width | h: $height" . (isset($didScale) ? '' : ' [Not scaled: insufficient input resolution]') .
+					(isset($cropWidth) ? "\nCrop Box - w: $cropWidth | h: $cropHeight\nCrop Start - x: $cropStartX | y: $cropStartY" : '');
+			}
 		}
 
 		if (!empty($options['strip'])) {  // convert to sRGB, remove any ICC profile and metadata
@@ -275,7 +280,7 @@ public function processImage($input, $output, $options = array()) {
 			$image->strip();
 		}
 
-		$outputOpts = isset($options['q']) ? array('quality' => $options['q']) : array();  // change 'q' to 'quality'
+		$outputOpts = isset($options['q']) ? array('quality' => (int) $options['q']) : array();  // change 'q' to 'quality'
 		$image->save($output, $outputOpts);
 	}
 	catch(Imagine\Exception\Exception $e) {
