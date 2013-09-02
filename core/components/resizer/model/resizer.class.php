@@ -151,17 +151,16 @@ public function processImage($input, $output, $options = array()) {
 			}
 
 			/** Scale **/
-			if (isset($options['scale'])) {
+			if (!empty($options['scale'])) {
 				if (empty($options['aoe'])) {  // if aoe is off, cap scale so image isn't enlarged
 					$hScale = $origHeight / $height;
 					$wScale = $origWidth / $width;
-					if ($hScale > 1 && $wScale > 1) {  // prevent this from making the final image smaller
-						$options['scale'] = min($hScale, $wScale, $options['scale']);
-						$width = $width * $options['scale'];
-						$height = $height * $options['scale'];
-					}
-					else { $options['scale'] = 1; }  // set this so the change shows up in the debug info
+					$wRequested = $width * $options['scale'];  // we'll need these for quality scaling
+					$hRequested = $height * $options['scale'];
+					$options['scale'] = ($hScale > 1 && $wScale > 1) ? min($hScale, $wScale, $options['scale']) : 1;
 				}
+				$width = $width * $options['scale'];
+				$height = $height * $options['scale'];
 			}
 
 			$newAR = $width / $height;
