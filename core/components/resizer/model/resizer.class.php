@@ -113,6 +113,7 @@ public function processImage($input, $output, $options = array()) {
 	if (is_string($options)) {  // convert an options string to an array if needed
 		$options = parse_str($options);
 	}
+	$outputType = strtolower(pathinfo($output, PATHINFO_EXTENSION)));  // extension determines image format
 	try {
 		$image = $this->imagine->open($input);
 
@@ -278,6 +279,9 @@ public function processImage($input, $output, $options = array()) {
 		}
 
 		$outputOpts = isset($options['q']) ? array('quality' => (int) $options['q']) : array();  // change 'q' to 'quality'
+		if (($outputType === 'png' || $outputType === 'gif') && empty($options['fl'])) {
+			$outputOpts['flatten'] = FALSE;  // don't flatten layers for png and gif unless 'fl' option is set
+		}
 		$image->save($output, $outputOpts);
 	}
 	catch(Imagine\Exception\Exception $e) {
