@@ -102,13 +102,13 @@ public function resetDebug() {
  * Returns TRUE/FALSE or success/failure
  */
 public function processImage($input, $output, $options = array()) {
-	if ($this->debug) {
-		$optionsOriginal = is_string($options) ? parse_str($options) : $options;
-		$startTime = microtime(TRUE);
-	}
 	if ( !file_exists($input) && !($input = $this->findFile($input)) ) {
 		$this->debugmessages[] = "No such file: $input  ** Skipping **";
 		return FALSE;
+	}
+	if ($this->debug) {
+		$optionsOriginal = is_string($options) ? parse_str($options) : $options;
+		$startTime = microtime(TRUE);
 	}
 	if (is_string($options)) {  // convert an options string to an array if needed
 		$options = parse_str($options);
@@ -255,20 +255,17 @@ public function processImage($input, $output, $options = array()) {
 				if ($sizeRatio > 0.25) {  // if new image has more that 1/4 the resolution of the
 					$options['q'] += round(($options['qmax'] - $options['q']) * (1 - $sizeRatio) / 0.75);
 				}
-				else {  // otherwise qmax
-					$options['q'] = $options['qmax'];
 				}
+				else { $options['q'] = $options['qmax']; }  // otherwise qmax
 			}
 
-			if (isset($cropBox)) {
-				$image->crop($cropStart, $cropBox);
-			}
+			if (isset($cropBox)) { $image->crop($cropStart, $cropBox); }
 
 			if ($this->debug) {
 				$this->debugmessages[] = 'Input options:' . substr(var_export($optionsOriginal, TRUE), 7, -3);  // print all options, stripping off array()
 				$this->debugmessages[] = 'Output options:' . substr(var_export($options, TRUE), 7, -3);
 				$this->debugmessages[] = "\nOriginal - w: $origWidth | h: $origHeight " . sprintf("(%2.2f MP)", $origWidth * $origHeight / 1e6) .
-					"\nRequested - w: $wRequested | h: $hRequested" .
+					"\nRequested - w: " . round($wRequested) . ' | h: ' . round($hRequested) .
 					"\nNew - w: $width | h: $height" . (isset($didScale) ? '' : ' [Not scaled: insufficient input resolution]') .
 					(isset($cropWidth) ? "\nCrop Box - w: $cropWidth | h: $cropHeight\nCrop Start - x: $cropStartX | y: $cropStartY" : '');
 			}
