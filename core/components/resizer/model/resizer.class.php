@@ -113,7 +113,7 @@ public function processImage($input, $output, $options = array()) {
 	if (is_string($options)) {  // convert an options string to an array if needed
 		$options = parse_str($options);
 	}
-	$outputType = strtolower(pathinfo($output, PATHINFO_EXTENSION)));  // extension determines image format
+	$outputType = strtolower(pathinfo($output, PATHINFO_EXTENSION));  // extension determines image format
 	try {
 		$image = $this->imagine->open($input);
 
@@ -250,12 +250,11 @@ public function processImage($input, $output, $options = array()) {
 				$image->scale(new Imagine\Image\Box($width, $height));
 				$didScale = TRUE;
 			}
-			elseif (isset($options['qmax']) && empty($options['aoe']) && isset($options['q']) && $options['qmax'] > $options['q']) {
+			elseif (isset($options['qmax']) && ($outputType === 'jpg' || $outputType === 'jpeg') && empty($options['aoe']) && isset($options['q'])) {
 				// undersized image. We'll increase q towards qmax depending on how much it's undersized
 				$sizeRatio = $origWidth * $origHeight / (isset($wRequested) ? ($wRequested * $hRequested) : ($width * $height));
-				if ($sizeRatio > 0.25) {  // if new image has more that 1/4 the resolution of the
-					$options['q'] += round(($options['qmax'] - $options['q']) * (1 - $sizeRatio) / 0.75);
-				}
+				if ($sizeRatio > 0.5) {  // if new image has more that 1/2 the resolution of the requested size
+					$options['q'] += round(($options['qmax'] - $options['q']) * (1 - $sizeRatio) / 0.5);
 				}
 				else { $options['q'] = $options['qmax']; }  // otherwise qmax
 			}
@@ -266,7 +265,7 @@ public function processImage($input, $output, $options = array()) {
 				$this->debugmessages[] = 'Input options:' . substr(var_export($optionsOriginal, TRUE), 7, -3);  // print all options, stripping off array()
 				$this->debugmessages[] = 'Output options:' . substr(var_export($options, TRUE), 7, -3);
 				$this->debugmessages[] = "\nOriginal - w: $origWidth | h: $origHeight " . sprintf("(%2.2f MP)", $origWidth * $origHeight / 1e6) .
-					"\nRequested - w: " . round($wRequested) . ' | h: ' . round($hRequested) .
+					(isset($wRequested) ? "\nRequested - w: " . round($wRequested) . ' | h: ' . round($hRequested) : '') .
 					"\nNew - w: $width | h: $height" . (isset($didScale) ? '' : ' [Not scaled: insufficient input resolution]') .
 					(isset($cropWidth) ? "\nCrop Box - w: $cropWidth | h: $cropHeight\nCrop Start - x: $cropStartX | y: $cropStartY" : '');
 			}
