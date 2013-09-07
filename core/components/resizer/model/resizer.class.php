@@ -117,7 +117,7 @@ public function processImage($input, $output, $options = array()) {
 	try {
 		$image = $this->imagine->open($input);
 
-		if (isset($options['w']) || isset($options['h']) || isset($options['wp']) || isset($options['hp']) || isset($options['wl']) || isset($options['hl']) || isset($options['ws']) || isset($options['hs'])) {  // see if we have any resizing to do
+		if (isset($options['w']) || isset($options['h']) || isset($options['wp']) || isset($options['hp']) || isset($options['wl']) || isset($options['hl']) || isset($options['ws']) || isset($options['hs']) || (isset($options['sw']) && isset($options['sh']))) {  // see if we have any resizing to do
 			$size = $image->getSize();
 			$origWidth = $size->getWidth();
 			$origHeight = $size->getHeight();
@@ -174,6 +174,30 @@ public function processImage($input, $output, $options = array()) {
 				elseif ($newAR > $origAR)  { $width = $height * $origAR; }
 				$width = round($width);
 				$height = round($height);
+
+				if (isset($options['sw']) && isset($options['sh'])) {  // handle non-zc cropping
+					$newWidth = $options['sw'] < 1 ? round($width * $options['sw']) : $options['sw'];  // sw < 1 is a %, >= 1 in px
+					$newHeight = $options['sh'] < 1 ? round($height * $options['sh']) : $options['sh'];
+					if ($newWidth > $width)  { $newWidth = $width; }  // make sure new dims don't exceed the input image
+					if ($newHeight > $height)  { $newHeight = $height; }
+
+					if (isset($options['sx'])) {
+						$cropStartX = $options['sx'] < 1 ? round($width * $options['sx']) : $options['sx'];
+						if ($cropStartX + $newWidth > $width)  { $cropStartX = $width - $newWidth; }  // crop box can't go past the right edge
+					}
+					else {
+						$cropStartX = (int) (($width - $newWidth) / 2);  // center
+					}
+					if (isset($options['sy'])) {
+						$cropStartY = $options['sy'] < 1 ? round($height * $options['sy']) : $options['sy'];
+						if ($cropStartX + $newWidth > $width)  { $cropStartX = $width - $newWidth; }
+					}
+					else {
+						$cropStartY = (int) (($height - $newHeight) / 2);
+					}
+					$cropStart = new Imagine\Image\Point($cropStartX, $cropStartY);
+					$cropBox = new Imagine\Image\Box($newWidth, $newHeight);
+				}
 			}
 			elseif ($bothDims) {  // Zoom Crop.  Skip if we only got one dimension.
 				if (empty($options['aoe'])) {
@@ -240,8 +264,6 @@ public function processImage($input, $output, $options = array()) {
 				}
 				$cropStart = new Imagine\Image\Point($cropStartX, $cropStartY);
 				$cropBox = new Imagine\Image\Box($width, $height);
-				$cropWidth = $width;  // just for...
-				$cropHeight = $height;  // ...debug messages
 				$width = $newWidth;
 				$height = $newHeight;
 			}
@@ -267,7 +289,7 @@ public function processImage($input, $output, $options = array()) {
 				$this->debugmessages[] = "\nOriginal - w: $origWidth | h: $origHeight " . sprintf("(%2.2f MP)", $origWidth * $origHeight / 1e6) .
 					(isset($wRequested) ? "\nRequested - w: " . round($wRequested) . ' | h: ' . round($hRequested) : '') .
 					"\nNew - w: $width | h: $height" . (isset($didScale) ? '' : ' [Not scaled: insufficient input resolution]') .
-					(isset($cropWidth) ? "\nCrop Box - w: $cropWidth | h: $cropHeight\nCrop Start - x: $cropStartX | y: $cropStartY" : '');
+					(isset($cropBox) ? "\nCrop Box - w: {$cropBox->getWidth()} | h: {$cropBox->getHeight()}\nCrop Start - x: $cropStartX | y: $cropStartY" : '');
 			}
 		}
 
