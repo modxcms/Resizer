@@ -300,9 +300,6 @@ public function processImage($input, $output, $options = array()) {
 		}
 
 		$outputOpts = isset($options['q']) ? array('quality' => (int) $options['q']) : array();  // change 'q' to 'quality'
-		if (($outputType === 'png' || $outputType === 'gif') && empty($options['fl'])) {
-			$outputOpts['flatten'] = FALSE;  // don't flatten layers for png and gif unless 'fl' option is set
-		}
 		$image->save($output, $outputOpts);
 	}
 	catch(Imagine\Exception\Exception $e) {
