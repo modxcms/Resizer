@@ -204,8 +204,8 @@ public function processImage($input, $output, $options = array()) {
 				if (!empty($options['sh'])) {
 					$newHeight = $options['sh'] < 1 ? round($height * $options['sh']) : $options['sh'];
 				}
-				if ($newWidth > $width || empty($options['sw']))  { $newWidth = $width; }  // make sure new dims don't exceed the image
-				if ($newHeight > $height || empty($options['sh']))  { $newHeight = $height; }
+				if (empty($options['sw']) || $newWidth > $width)  { $newWidth = $width; }  // make sure new dims don't exceed the image
+				if (empty($options['sh']) || $newHeight > $height)  { $newHeight = $height; }
 
 				if (isset($options['sx'])) {
 					$cropStartX = $options['sx'] < 1 ? round($width * $options['sx']) : $options['sx'];
