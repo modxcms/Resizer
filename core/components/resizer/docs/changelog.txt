@@ -1,8 +1,13 @@
 Resizer Changelog
 
-v0.2.0-pl  [01.09.2013]
+v0.3.0-pl  [07.09.2013]
 -----------------------
 
+- Add sw, sh, sx, sy options
+- Add maxq option for jpeg quality scaling on undersized input images
+- Add available memory check when using GD
+- Fix scale option name and improve operation
+- Expand debug messages
 - Merge latest Imagine commits
 
 
