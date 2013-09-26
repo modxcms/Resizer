@@ -864,7 +864,9 @@ final class Image extends AbstractImage
         }
 
         $this->imagick->setType($typeMapping[$palette->name()]);
-        $this->imagick->setColorspace(static::$colorspaceMapping[$palette->name()]);
+        if (method_exists($this->imagick, 'setColorspace')) {
+	        $this->imagick->setColorspace(static::$colorspaceMapping[$palette->name()]);
+	    }
         $this->palette = $palette;
     }
 
