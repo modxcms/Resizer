@@ -1,5 +1,12 @@
 Resizer Changelog
 
+v0.3.2-pl  [29.09.2013]
+-----------------------
+
+- Fix bug in the Imagine Imagick driver (affected a few, mostly older
+  versions of ImageMagick)
+
+
 v0.3.1-pl  [08.09.2013]
 -----------------------
 
