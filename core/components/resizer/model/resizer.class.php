@@ -31,7 +31,6 @@ class Resizer {
 
 private $modx;
 private $imagine;
-private $srgb;
 private $basePathPlusUrl;
 private $maxsize = FALSE;
 
@@ -324,9 +323,8 @@ public function processImage($input, $output, $options = array()) {
 				(isset($cropBox) ? "\nCrop Box - w: {$cropBox->getWidth()} | h: {$cropBox->getHeight()}\nCrop Start - x: $cropStartX | y: $cropStartY" : '');
 		}
 
+/* strip */
 		if (!empty($options['strip'])) {  // convert to sRGB, remove any ICC profile and metadata
-			if (!isset($this->srgb))  { $this->srgb = new Imagine\Image\Palette\RGB(); }
-			$image->usePalette($this->srgb);
 			$image->strip();
 		}
 
