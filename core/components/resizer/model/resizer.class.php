@@ -31,6 +31,8 @@ class Resizer {
 
 private $modx;
 private $imagine;
+private $palette;
+private $topLeft;
 private $basePathPlusUrl;
 private $maxsize = FALSE;
 
@@ -301,7 +303,8 @@ public function processImage($input, $output, $options = array()) {
 		}
 
 		if ( ($width < $origWidth && $height < $origHeight) || !empty($options['aoe']) ) {
-			$image->scale(new Imagine\Image\Box($width, $height));
+			$imgBox = new Imagine\Image\Box($width, $height);
+			$image->scale($imgBox);
 			$didScale = TRUE;
 		}
 		elseif (isset($options['qmax']) && ($outputType === 'jpg' || $outputType === 'jpeg') && empty($options['aoe']) && isset($options['q'])) {
@@ -326,6 +329,21 @@ public function processImage($input, $output, $options = array()) {
 /* strip */
 		if (!empty($options['strip'])) {  // convert to sRGB, remove any ICC profile and metadata
 			$image->strip();
+		}
+
+/* bg */
+		if (!empty($options['bg']) && strncasecmp('jp', pathinfo($input, PATHINFO_EXTENSION), 2) !== 0) {
+			if (!isset($this->palette)) {
+				$this->palette = new Imagine\Image\Palette\RGB();
+				$this->topLeft = new Imagine\Image\Point(0, 0);
+			}
+			$bgColor = explode('.', $options['bg']);
+			$bgColor[1] = isset($bgColor[1]) ? $bgColor[1] : 100;
+			$this->debugmessages[] = "Background color: #{$bgColor[0]}, opacity: {$bgColor[1]}";
+			$image = $this->imagine->create(
+				isset($imgBox) ? $imgBox : new Imagine\Image\Box($width, $height),
+				$this->palette->color($bgColor[0], 100 - $bgColor[1])
+			)->paste($image, $this->topLeft);
 		}
 
 		if (isset($cropBox)) { $image->crop($cropStart, $cropBox); }
