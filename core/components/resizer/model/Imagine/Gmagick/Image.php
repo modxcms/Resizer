@@ -795,10 +795,7 @@ final class Image extends AbstractImage
         $this->gmagick->setimagecolorspace(static::$colorspaceMapping[$palette->name()]);
         $this->palette = $palette;
     }
-
-
-
-
+}
 
     /**
      * {@inheritdoc}
@@ -812,7 +809,7 @@ final class Image extends AbstractImage
             );
         } catch (\GmagickException $e) {
             throw new RuntimeException(
-                'Resize operation failed', $e->getCode(), $e
+                'Scale operation failed', $e->getCode(), $e
             );
         }
 

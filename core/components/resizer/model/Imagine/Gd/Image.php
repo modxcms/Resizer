@@ -741,9 +741,7 @@ final class Image extends AbstractImage
 
         return $mimeTypes[$format];
     }
-
-
-
+}
 
     /**
      * {@inheritdoc}
@@ -761,7 +759,7 @@ final class Image extends AbstractImage
         if (false === imagecopyresampled($dest, $this->resource, 0, 0, 0, 0,
             $width, $height, imagesx($this->resource), imagesy($this->resource)
         )) {
-            throw new RuntimeException('Image resize operation failed');
+            throw new RuntimeException('Image scale operation failed');
         }
 
         imagealphablending($this->resource, false);

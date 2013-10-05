@@ -180,9 +180,7 @@ interface ManipulatorInterface
      * @return ManipulatorInterface
      */
     public function fill(FillInterface $fill);
-
-
-
+}
 
     /**
      * Scales current image and returns self
