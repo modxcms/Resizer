@@ -105,7 +105,7 @@ private function position($opt, $containerDims, $imageDims) {
 	return new Imagine\Image\Point($x, $y);
 }
 
-public $debugmessages = array('Resizer v0.3.0-pl');
+public $debugmessages = array('Resizer v0.4.0-pl');
 public $debug = FALSE;  //enable generation of debugging messages
 
 /*
@@ -179,10 +179,11 @@ public function processImage($input, $output, $options = array()) {
 	if (is_string($options)) {  // convert an options string to an array if needed
 		$options = parse_str($options);
 	}
-	$outputType = strtolower(pathinfo($output, PATHINFO_EXTENSION));  // extension determines image format
+	$outputIsJpg = strncasecmp('jp', pathinfo($input, PATHINFO_EXTENSION), 2) === 0;  // extension determines image format
 	try {
 		$image = $this->imagine->open($input);
 
+/* initial dimensions */
 		$size = $image->getSize();
 		$origWidth = $size->getWidth();
 		$origHeight = $size->getHeight();
@@ -225,7 +226,7 @@ public function processImage($input, $output, $options = array()) {
 			$bothDims = FALSE;
 		}
 
-		/** Scale **/
+/* scale */
 		if (!empty($options['scale'])) {
 			if (empty($options['aoe'])) {  // if aoe is off, cap scale so image isn't enlarged
 				$hScale = $origHeight / $height;
@@ -254,6 +255,7 @@ public function processImage($input, $output, $options = array()) {
 			}
 			else {
 				$bgColor = array('ffffff', 100);
+			}
 			$backgroundColor = $this->palette->color($bgColor[0], 100 - $bgColor[1]);
 			$hasBG = TRUE;
 		}
@@ -266,7 +268,8 @@ public function processImage($input, $output, $options = array()) {
 			$width = round($width);  // clean up
 			$height = round($height);
 
-			if (isset($options['sw']) || isset($options['sh'])) {  // handle non-zc cropping
+/* non-zc cropping */
+			if (isset($options['sw']) || isset($options['sh'])) {
 				if ($width > $origWidth && empty($options['aoe'])) {  // first adjust output size if it's too big
 					$width = $origWidth;  // $newAR == $origAR so this is easy
 					$height = $origHeight;
@@ -305,7 +308,8 @@ public function processImage($input, $output, $options = array()) {
 				$farBox = new Imagine\Image\Box($options['w'], $options['h']);
 			}
 		}
-		else {  // Zoom Crop
+		else {
+/* zc */
 			if (empty($options['aoe'])) {
 				// if the crop box is bigger than the original image, scale it down
 				if ($width > $origWidth) {
@@ -340,21 +344,23 @@ public function processImage($input, $output, $options = array()) {
 			$height = $newHeight;
 		}
 
+/* resize, aoe */
 		if ( ($width < $origWidth && $height < $origHeight) || !empty($options['aoe']) ) {
 			$imgBox = new Imagine\Image\Box($width, $height);
 			$image->scale($imgBox);
 			$didScale = TRUE;
 		}
-		elseif (isset($options['qmax']) && ($outputType === 'jpg' || $outputType === 'jpeg') && empty($options['aoe']) && isset($options['q'])) {
+/* qmax */
+		elseif (isset($options['qmax']) && $outputIsJpg && empty($options['aoe']) && isset($options['q'])) {
 			// undersized input image. We'll increase q towards qmax depending on how much it's undersized
 			$sizeRatio = $origWidth * $origHeight / (isset($wRequested) ? ($wRequested * $hRequested) : ($width * $height));
 			if ($sizeRatio > 0.5) {  // if new image has more that 1/2 the resolution of the requested size
-				$options['q'] += round(($options['qmax'] - $options['q']) * (1 - $sizeRatio) / 0.5);
+				$options['q'] += round(($options['qmax'] - $options['q']) * (1 - $sizeRatio) * 2);
 			}
 			else { $options['q'] = $options['qmax']; }  // otherwise qmax
 		}
 
-
+/* debug info */
 		if ($this->debug) {
 			$this->debugmessages[] = 'Input options:' . substr(var_export($optionsOriginal, TRUE), 7, -3);  // print all options, stripping off array()
 			$this->debugmessages[] = 'Output options:' . substr(var_export($options, TRUE), 7, -3);
@@ -386,15 +392,17 @@ public function processImage($input, $output, $options = array()) {
 			$image->crop($cropStart, $cropBox);
 		}
 
-		if (isset($cropBox)) { $image->crop($cropStart, $cropBox); }
+/* save */
 		$outputOpts = isset($options['q']) ? array('quality' => (int) $options['q']) : array();  // change 'q' to 'quality'
 		$image->save($output, $outputOpts);
 	}
+/* error handler */
 	catch(Imagine\Exception\Exception $e) {
 		$this->debugmessages[] = '*** Error *** ' . $e->getMessage();
 		return FALSE;
 	}
 
+/* debug info (timing) */
 	if ($this->debug) {
 		$this->debugmessages[] = "Wrote $output";
 		$this->debugmessages[] = 'Execution time: ' . round((microtime(TRUE) - $startTime) * 1e3) . ' ms';

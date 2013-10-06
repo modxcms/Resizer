@@ -1,9 +1,19 @@
 Resizer Changelog
 
+v0.4.0-pl  [05.10.2013]
+-----------------------
+
+- Add bg (background color) paramater
+- Add far (force aspect ratio) paramater
+- [#1] Fix an issue with the package validator and older versions of
+  the Imagick extension
+- Merge latest Imagine commits
+
+
 v0.3.2-pl  [29.09.2013]
 -----------------------
 
-- Fix bug in the Imagine Imagick driver (affected a few, mostly older
+- Fix a bug in the Imagine Imagick driver (affected a few, mostly older
   versions of ImageMagick)
 
 

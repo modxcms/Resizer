@@ -1,4 +1,4 @@
-Resizer v0.3.2-pl
+Resizer v0.4.0-pl
 ==========
 
 A lightweight, modern image resizer for MODX. Built on [Imagine](https://github.com/avalanche123/Imagine), Resizer supports the Gmagick, Imagick and GD extensions and is considerably faster than phpThumb for image sizing and cropping operations. Available from the MODX [Extras Repo](http://modx.com/extras/package/resizer).
@@ -56,9 +56,11 @@ Resizer only supports a subset of [phpThumb options](http://phpthumb.sourceforge
 	<tr><td><b>sh</b></td><td>height — source rectangle. Default: 100%</td><td>pixels (or % if &lt; 1)</td></tr>
 	<tr><td><b>sx</b></td><td>left side of source rectangle. sx and sy control the starting point for the crop box. Resizer will adjust this value if needed to keep the right side from going past the opposite edge of the image. Default: center crop</td><td>pixels (or % if &lt; 1)</td></tr>
 	<tr><td><b>sy</b></td><td>top side of source rectangle. Default: center crop</td><td>pixels (or % if &lt; 1)</td></tr>
-	<tr><td><b>zc</b></td><td>Zoom Crop. Sizes an image to fill the given box (both a width and a height must be specified) and crops off any extra.  The value indicates the portion of the image you’d like to retain: top left, center, bottom right, etc. (You can also use <b>1</b> for center.) Unlike with phpThumb, all these options work with GD as well.</td><td><b>tl</b>, <b>t</b>, <b>tr</b><br><b>l</b>, <b>c</b>, <b>r</b><br><b>bl</b>, <b>b</b>, <b>br</b></td></tr>
 	<tr><td><b>aoe</b></td><td>Allow Output Enlargement. Turning this on will allow the output image to be interpolated up if the requested size exceeds the resolution of the input image.</td><td><b>1</b> or <b>0</b> (default: <b>0</b>)</td></tr>
+	<tr><td><b>bg</b></td><td>Background Color. Specifies a background color for input images with transparency or when extending the background with <b>far</b>. Colors are specified with 3- or 6-digit hex values, just like CSS. A leading # is optional. Also optional is an opacity value (0–100) at the end, separated by a /. Opacity only applies if the output format is PNG. Examples: #a00, 333333, F9AE90/75</td><td></td></tr>
+	<tr><td><b>far</b></td><td>Force Aspect Ratio. Width and height must both be specified. Scales an image to fit inside the box specified by width and height, then adds a solid color (white by default, or <b>bg</b>) if necessary to make the output image exactly width x height. The value given indicates how the image will be positioned inside the box. l=left, r=right, t=top, b=bottom, c=center</td><td><b>tl</b>, <b>t</b>, <b>tr</b><br><b>l</b>, <b>c</b>, <b>r</b><br><b>bl</b>, <b>b</b>, <b>br</b></td></tr>
 	<tr><td><b>q</b></td><td>JPEG quality</td><td>integer (default: <b>75</b>)</td></tr>
+	<tr><td><b>zc</b></td><td>Zoom Crop. Sizes an image to fill the given box (both a width and a height must be specified) and crops off any extra.  The value indicates the portion of the image you’d like to retain: top left, center, bottom right, etc. (You can also use <b>1</b> for center.) Overrides <b>far</b>. Unlike with phpThumb, all these options work with GD as well.</td><td><b>tl</b>, <b>t</b>, <b>tr</b><br><b>l</b>, <b>c</b>, <b>r</b><br><b>bl</b>, <b>b</b>, <b>br</b></td></tr>
 </table>
 
 *Output file type* — Resizer doesn’t explicitly support phpThumb’s <b>f</b> option, but instead infers the proper image type from the output filename’s extension. Some wrappers like pThumb handle the <b>f</b> option in the usual way.<br>  Supported formats: jpg (or jpeg), png, gif, wbmp, xbm.
@@ -69,7 +71,7 @@ Resizer only supports a subset of [phpThumb options](http://phpthumb.sourceforge
 	<tr><th>Option</th><th>Description</th><th>Value/Unit</th></tr>
 	<tr><td><b>scale</b></td><td>Convenient when creating retina images. Any dimensions given will be multiplied by this number internally. If <b>aoe</b> is off—the default—and the input image doesn’t have sufficient resolution, <b>scale</b> will be adjusted downward so you get as much output resolution as possible without scaling the image up.</td><td>number &gt; 1</td></tr>
 	<tr><td><b>qmax</b></td><td>An upper limit jpeg quality. If the requested size exceeds the input image resolution and <b>aoe</b> is off, Resizer can increase the jpeg quality in an attempt to compensate. Quality begins at q (input resolution = output resolution) and reaches qmax when the input resolution is 1/2 of the requested output resolution.</td><td>1–100 (should be greater than q)</td></tr>
-	<tr><td><b>strip</b></td><td>Convert the image to sRGB, then strip the color profile and EXIF info.  An embedded profile and EXIF info can add 10KB or more to an image.</td><td><b>1</b> (on)</td></tr>
+	<tr><td><b>strip</b></td><td>Convert the image to sRGB, then strip the color profile and EXIF metadata. An embedded profile and EXIF info can add 10KB or more to an image. GD doesn’t support color profiles.</td><td><b>1</b> (on)</td></tr>
 </table>
 
 
