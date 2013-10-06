@@ -3,8 +3,8 @@ Resizer Changelog
 v0.4.0-pl  [05.10.2013]
 -----------------------
 
-- Add bg (background color) paramater
-- Add far (force aspect ratio) paramater
+- Add bg (background color) parameter
+- Add far (force aspect ratio) parameter
 - [#1] Fix an issue with the package validator and older versions of
   the Imagick extension
 - Merge latest Imagine commits
