@@ -741,7 +741,6 @@ final class Image extends AbstractImage
 
         return $mimeTypes[$format];
     }
-}
 
     /**
      * {@inheritdoc}

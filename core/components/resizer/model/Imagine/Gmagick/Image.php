@@ -795,7 +795,6 @@ final class Image extends AbstractImage
         $this->gmagick->setimagecolorspace(static::$colorspaceMapping[$palette->name()]);
         $this->palette = $palette;
     }
-}
 
     /**
      * {@inheritdoc}

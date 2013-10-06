@@ -894,7 +894,6 @@ final class Image extends AbstractImage
 
         return static::$supportsColorspaceConversion = method_exists('Imagick', 'setColorspace');
     }
-}
 
     /**
      * {@inheritdoc}
