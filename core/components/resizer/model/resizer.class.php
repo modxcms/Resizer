@@ -52,6 +52,58 @@ private function findFile($src) {
 	return FALSE;
 }
 
+/*
+ * Positions an image within a container
+ * $opt				String	position parameter: c, tl, br, etc.
+ * $containerDims	Array	Container width, height
+ * $imageDims		Array	Image width, height
+ *
+ * Returns a Point with the coordinates of the top left corner
+ */
+private function position($opt, $containerDims, $imageDims) {
+	$opt = strtolower($opt);
+	if ($opt == 1 || $opt === 'c') {  // center is most common
+		$x = (int) (($containerDims[0] - $imageDims[0]) / 2);
+		$y = (int) (($containerDims[1] - $imageDims[1]) / 2);
+	}
+	elseif ($opt === 'tl') {
+		$x = 0;
+		$y = 0;
+	}
+	elseif ($opt === 't') {
+		$x = (int) (($containerDims[0] - $imageDims[0]) / 2);
+		$y = 0;
+	}
+	elseif ($opt === 'tr') {
+		$x = $containerDims[0] - $imageDims[0];
+		$y = 0;
+	}
+	elseif ($opt === 'l') {
+		$x = 0;
+		$y = (int) (($containerDims[1] - $imageDims[1]) / 2);
+	}
+	elseif ($opt === 'r')  {
+		$x = $containerDims[0] - $imageDims[0];
+		$y = (int) (($containerDims[1] - $imageDims[1]) / 2);
+	}
+	elseif ($opt === 'bl')  {
+		$x = 0;
+		$y = $containerDims[1] - $imageDims[1];
+	}
+	elseif ($opt === 'b')  {
+		$x = (int) (($containerDims[0] - $imageDims[0]) / 2);
+		$y = $containerDims[1] - $imageDims[1];
+	}
+	elseif ($opt === 'br')  {
+		$x = $containerDims[0] - $imageDims[0];
+		$y = $containerDims[1] - $imageDims[1];
+	}
+	else {  // otherwise same as center
+		$x = (int) (($containerDims[0] - $imageDims[0]) / 2);
+		$y = (int) (($containerDims[1] - $imageDims[1]) / 2);
+	}
+	return new Imagine\Image\Point($x, $y);
+}
 
 public $debugmessages = array('Resizer v0.3.0-pl');
 public $debug = FALSE;  //enable generation of debugging messages
@@ -188,7 +240,27 @@ public function processImage($input, $output, $options = array()) {
 
 		$newAR = $width / $height;
 
+		$hasBG = FALSE;
+/* bg - start */
+		if ( (!empty($options['bg']) && strncasecmp('jp', pathinfo($input, PATHINFO_EXTENSION), 2) !== 0) ||
+			 (!empty($options['far']) && $bothDims && empty($options['zc'])) ) {
+			if (!isset($this->palette)) {
+				$this->palette = new Imagine\Image\Palette\RGB();
+				$this->topLeft = new Imagine\Image\Point(0, 0);
+			}
+			if (!empty($options['bg'])) {
+				$bgColor = explode('/', $options['bg']);
+				$bgColor[1] = isset($bgColor[1]) ? $bgColor[1] : 100;
+			}
+			else {
+				$bgColor = array('ffffff', 100);
+			$backgroundColor = $this->palette->color($bgColor[0], 100 - $bgColor[1]);
+			$hasBG = TRUE;
+		}
+
 		if (empty($options['zc']) || !$bothDims) {
+			$options['w'] = $width;
+			$options['h'] = $height;
 			if ($newAR < $origAR)  { $height = $width / $origAR; }  // Make sure AR doesn't change. Smaller dimension...
 			elseif ($newAR > $origAR)  { $width = $height * $origAR; }  // ...limits larger
 			$width = round($width);  // clean up
@@ -225,6 +297,13 @@ public function processImage($input, $output, $options = array()) {
 				$cropStart = new Imagine\Image\Point($cropStartX, $cropStartY);
 				$cropBox = new Imagine\Image\Box($newWidth, $newHeight);
 			}
+/* far */
+			elseif (!empty($options['far']) && $bothDims) {
+				$options['w'] = round($options['w']);
+				$options['h'] = round($options['h']);
+				$farPoint = $this->position($options['far'], array($options['w'], $options['h']), array($width, $height));
+				$farBox = new Imagine\Image\Box($options['w'], $options['h']);
+			}
 		}
 		else {  // Zoom Crop
 			if (empty($options['aoe'])) {
@@ -255,48 +334,7 @@ public function processImage($input, $output, $options = array()) {
 				$newHeight = $height = round($height);
 			}
 
-			$options['zc'] = strtolower($options['zc']);
-			if ($options['zc'] == 1 || $options['zc'] === 'c') {  // center is most common
-				$cropStartX = (int) (($newWidth - $width) / 2);
-				$cropStartY = (int) (($newHeight - $height) / 2);
-			}
-			elseif ($options['zc'] === 'tl') {
-				$cropStartX = 0;
-				$cropStartY = 0;
-			}
-			elseif ($options['zc'] === 't') {
-				$cropStartX = (int) (($newWidth - $width) / 2);
-				$cropStartY = 0;
-			}
-			elseif ($options['zc'] === 'tr') {
-				$cropStartX = $newWidth - $width;
-				$cropStartY = 0;
-			}
-			elseif ($options['zc'] === 'l') {
-				$cropStartX = 0;
-				$cropStartY = (int) (($newHeight - $height) / 2);
-			}
-			elseif ($options['zc'] === 'r')  {
-				$cropStartX = $newWidth - $width;
-				$cropStartY = (int) (($newHeight - $height) / 2);
-			}
-			elseif ($options['zc'] === 'bl')  {
-				$cropStartX = 0;
-				$cropStartY = $newHeight - $height;
-			}
-			elseif ($options['zc'] === 'b')  {
-				$cropStartX = (int) (($newWidth - $width) / 2);
-				$cropStartY = $newHeight - $height;
-			}
-			elseif ($options['zc'] === 'br')  {
-				$cropStartX = $newWidth - $width;
-				$cropStartY = $newHeight - $height;
-			}
-			else {  // otherwise same as center
-				$cropStartX = (int) (($newWidth - $width) / 2);
-				$cropStartY = (int) (($newHeight - $height) / 2);
-			}
-			$cropStart = new Imagine\Image\Point($cropStartX, $cropStartY);
+			$cropStart = $this->position($options['zc'], array($newWidth, $newHeight), array($width, $height));
 			$cropBox = new Imagine\Image\Box($width, $height);
 			$width = $newWidth;
 			$height = $newHeight;
@@ -323,7 +361,8 @@ public function processImage($input, $output, $options = array()) {
 			$this->debugmessages[] = "\nOriginal - w: $origWidth | h: $origHeight " . sprintf("(%2.2f MP)", $origWidth * $origHeight / 1e6) .
 				(isset($wRequested) ? "\nRequested - w: " . round($wRequested) . ' | h: ' . round($hRequested) : '') .
 				"\nNew - w: $width | h: $height" . (isset($didScale) ? '' : ' [Not scaled: same size or insufficient input resolution]') .
-				(isset($cropBox) ? "\nCrop Box - w: {$cropBox->getWidth()} | h: {$cropBox->getHeight()}\nCrop Start - x: $cropStartX | y: $cropStartY" : '');
+				(isset($cropBox) ? "\nCrop Box - w: {$cropBox->getWidth()} | h: {$cropBox->getHeight()}\nCrop Start - x: $cropStartX | y: $cropStartY" : '') .
+				($hasBG ? "\nBackground color: {$bgColor[0]} | opacity: {$bgColor[1]}" : '');
 		}
 
 /* strip */
@@ -331,19 +370,20 @@ public function processImage($input, $output, $options = array()) {
 			$image->strip();
 		}
 
-/* bg */
-		if (!empty($options['bg']) && strncasecmp('jp', pathinfo($input, PATHINFO_EXTENSION), 2) !== 0) {
-			if (!isset($this->palette)) {
-				$this->palette = new Imagine\Image\Palette\RGB();
-				$this->topLeft = new Imagine\Image\Point(0, 0);
-			}
-			$bgColor = explode('.', $options['bg']);
-			$bgColor[1] = isset($bgColor[1]) ? $bgColor[1] : 100;
-			$this->debugmessages[] = "Background color: #{$bgColor[0]}, opacity: {$bgColor[1]}";
+/* bg - finish */
+		if ($hasBG) {
 			$image = $this->imagine->create(
-				isset($imgBox) ? $imgBox : new Imagine\Image\Box($width, $height),
+				isset($farBox) ? $farBox : (isset($imgBox) ? $imgBox : new Imagine\Image\Box($width, $height)),
 				$this->palette->color($bgColor[0], 100 - $bgColor[1])
-			)->paste($image, $this->topLeft);
+			)->paste(
+				$image,
+				isset($farPoint) ? $farPoint : $this->topLeft
+			);
+		}
+
+/* crop */
+		if (isset($cropBox)) {
+			$image->crop($cropStart, $cropBox);
 		}
 
 		if (isset($cropBox)) { $image->crop($cropStart, $cropBox); }
