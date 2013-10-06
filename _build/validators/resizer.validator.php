@@ -44,12 +44,14 @@ if ($object->xpdo) {
 			$success = FALSE;
 			$modx->log(xPDO::LOG_LEVEL_INFO,'Availabe graphics libraries:');
 			if (class_exists('Gmagick', FALSE)) {
-				$version = Gmagick::getversion();
+				$magick = new Gmagick();
+				$version = $magick->getversion();
 				$modx->log(xPDO::LOG_LEVEL_INFO, "* {$version['versionString']}");
 				$success = TRUE;
 			}
 			if (class_exists('Imagick', FALSE)) {
-				$version = Imagick::getVersion();
+				$magick = new Imagick();  // instantiate an object since getVersion isn't a static...
+				$version = $magick->getVersion();  // ...method in old versions of Imagick
 				$modx->log(xPDO::LOG_LEVEL_INFO, "* {$version['versionString']}");
 				$success = TRUE;
 			}
