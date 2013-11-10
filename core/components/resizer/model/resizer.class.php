@@ -26,7 +26,6 @@ function imagineLoader($class) {
 }
 spl_autoload_register('\imagineLoader');
 
-use Imagine\Image\Box;
 
 class Resizer {
 
@@ -39,13 +38,13 @@ protected $imagine;
 private $palette;
 private $topLeft;
 private $basePathPlusUrl;
-private $maxsize = FALSE;
+private $maxsize = false;
 
 /*
  * Makes a token effort to look for a file
  * $src   string   path+filename to look for
  *
- * Returns path+filename on success, FALSE if it can't find the file
+ * Returns path+filename on success, false if it can't find the file
  */
 protected function findFile($src) {
 	$file = MODX_BASE_PATH . ltrim(rawurldecode($src), '/');
@@ -53,7 +52,7 @@ protected function findFile($src) {
 	if (is_readable($file)) {
 		return $file;
 	}
-	return FALSE;
+	return false;
 }
 
 /*
@@ -115,18 +114,18 @@ protected function position($opt, $containerDims, $imageDims) {
  * @param  int  $graphicsLib  (optional) specify a preferred graphics library
  *							  2: Auto/Gmagick, 1: Imagick, 0: GD
  */
-public function __construct(modX &$modx, $graphicsLib = TRUE) {
+public function __construct(modX &$modx, $graphicsLib = true) {
 	$this->modx =& $modx;
-	if ($graphicsLib === TRUE) {  // if a preference isn't specified, get it from system settings
+	if ($graphicsLib === true) {  // if a preference isn't specified, get it from system settings
 		$graphicsLib = $this->modx->getOption('resizer.graphics_library', NULL, 2);
 	}
 	// Decide which graphics library to use and create the appropriate Imagine object
-	if (class_exists('Gmagick', FALSE) && $graphicsLib > 1) {
+	if (class_exists('Gmagick', false) && $graphicsLib > 1) {
 		$this->debugmessages[] = 'Using Gmagick';
 		set_time_limit(0);
 		$this->imagine = new \Imagine\Gmagick\Imagine();
 	}
-	elseif (class_exists('Imagick', FALSE) && $graphicsLib) {
+	elseif (class_exists('Imagick', false) && $graphicsLib) {
 		$this->debugmessages[] = 'Using Imagick';
 		set_time_limit(0);  // execution time accounting seems strange on some systems. Maybe because of multi-threading?
 		$this->imagine = new \Imagine\Imagick\Imagine();
@@ -160,22 +159,22 @@ public function resetDebug() {
  * @param  string  $output   filename to write output image to. Image format determined by $output's extension.
  * @param  array   $options  options array or string, phpThumb style
  *
- * Returns TRUE/FALSE or success/failure
+ * Returns true/false or success/failure
  */
 public function processImage($input, $output, $options = array()) {
-		return FALSE;
 	if ( !is_readable($input) && !($input = $this->findFile($input)) ) {
 		$this->debugmessages[] = 'File not ' . (file_exists($input) ? 'readable': 'found') . ": $input  *** Skipping ***";
+		return false;
 	}
 	if ($this->debug) {
 		$optionsOriginal = is_string($options) ? parse_str($options) : $options;
-		$startTime = microtime(TRUE);
+		$startTime = microtime(true);
 	}
 	if ($this->maxsize) {  // if we're using GD we need to check the image will fit in memory
 		$imagesize = @GetImageSize($input);
-		if ($imagesize[0] * $imagesize[1] > $this->maxsize) {
+		if ($imagesize && $imagesize[0] * $imagesize[1] > $this->maxsize) {  // if there's no size we'll just go for it
 			$this->debugmessages[] = "GD: $input may exceed available memory  ** Skipping **";
-			return FALSE;
+			return false;
 		}
 	}
 	if (is_string($options)) {  // convert an options string to an array if needed
@@ -212,7 +211,7 @@ public function processImage($input, $output, $options = array()) {
 		}
 
 		// fill in a missing dimension
-		$bothDims = TRUE;
+		$bothDims = true;
 		if (empty($width)) {
 			if (empty($height))  {
 				$height = $origHeight;
@@ -221,11 +220,11 @@ public function processImage($input, $output, $options = array()) {
 			else {
 				$width = $height * $origAR;
 			}
-			$bothDims = FALSE;
+			$bothDims = false;
 		}
 		if (empty($height)) {
 			$height = $width / $origAR;
-			$bothDims = FALSE;
+			$bothDims = false;
 		}
 
 /* scale */
@@ -243,7 +242,7 @@ public function processImage($input, $output, $options = array()) {
 
 		$newAR = $width / $height;
 
-		$hasBG = FALSE;
+		$hasBG = false;
 /* bg - start */
 		if ( (!empty($options['bg']) && strncasecmp('jp', pathinfo($input, PATHINFO_EXTENSION), 2) !== 0) ||
 			 (!empty($options['far']) && $bothDims && empty($options['zc'])) ) {
@@ -259,7 +258,7 @@ public function processImage($input, $output, $options = array()) {
 				$bgColor = array('ffffff', 100);
 			}
 			$backgroundColor = $this->palette->color($bgColor[0], 100 - $bgColor[1]);
-			$hasBG = TRUE;
+			$hasBG = true;
 		}
 
 		if (empty($options['zc']) || !$bothDims) {
@@ -350,7 +349,7 @@ public function processImage($input, $output, $options = array()) {
 		if ( ($width < $origWidth && $height < $origHeight) || !empty($options['aoe']) ) {
 			$imgBox = new Imagine\Image\Box($width, $height);
 			$image->scale($imgBox);
-			$didScale = TRUE;
+			$didScale = true;
 		}
 /* qmax */
 		elseif (isset($options['qmax']) && $outputIsJpg && empty($options['aoe']) && isset($options['q'])) {
@@ -364,8 +363,8 @@ public function processImage($input, $output, $options = array()) {
 
 /* debug info */
 		if ($this->debug) {
-			$this->debugmessages[] = 'Input options:' . substr(var_export($optionsOriginal, TRUE), 7, -3);  // print all options, stripping off array()
-			$this->debugmessages[] = 'Output options:' . substr(var_export($options, TRUE), 7, -3);
+			$this->debugmessages[] = 'Input options:' . substr(var_export($optionsOriginal, true), 7, -3);  // print all options, stripping off array()
+			$this->debugmessages[] = 'Output options:' . substr(var_export($options, true), 7, -3);
 			$this->debugmessages[] = "\nOriginal - w: $origWidth | h: $origHeight " . sprintf("(%2.2f MP)", $origWidth * $origHeight / 1e6) .
 				(isset($wRequested) ? "\nRequested - w: " . round($wRequested) . ' | h: ' . round($hRequested) : '') .
 				"\nNew - w: $width | h: $height" . (isset($didScale) ? '' : ' [Not scaled: same size or insufficient input resolution]') .
@@ -401,15 +400,15 @@ public function processImage($input, $output, $options = array()) {
 /* error handler */
 	catch(Imagine\Exception\Exception $e) {
 		$this->debugmessages[] = '*** Error *** ' . $e->getMessage();
-		return FALSE;
+		return false;
 	}
 
 /* debug info (timing) */
 	if ($this->debug) {
 		$this->debugmessages[] = "Wrote $output";
-		$this->debugmessages[] = 'Execution time: ' . round((microtime(TRUE) - $startTime) * 1e3) . ' ms';
+		$this->debugmessages[] = 'Execution time: ' . round((microtime(true) - $startTime) * 1e3) . ' ms';
 	}
-	return TRUE;
+	return true;
 }
 
 
