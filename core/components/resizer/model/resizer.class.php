@@ -29,8 +29,12 @@ use Imagine\Image\Box;
 
 class Resizer {
 
-private $modx;
-private $imagine;
+public $debugmessages = array('Resizer v0.4.1');
+public $debug = false;  //enable generation of debugging messages
+
+protected $modx;
+protected $imagine;
+
 private $palette;
 private $topLeft;
 private $basePathPlusUrl;
@@ -42,9 +46,9 @@ private $maxsize = FALSE;
  *
  * Returns path+filename on success, FALSE if it can't find the file
  */
-private function findFile($src) {
 	$file = rawurldecode($src);
 	$file = MODX_BASE_PATH . ltrim($file, '/');
+protected function findFile($src) {
 	$file = str_replace($this->basePathPlusUrl, MODX_BASE_PATH, $file);  // if MODX is in a subdir, keep this subdir name from occuring twice
 	if (file_exists($file)) {
 		return $file;
@@ -60,7 +64,7 @@ private function findFile($src) {
  *
  * Returns a Point with the coordinates of the top left corner
  */
-private function position($opt, $containerDims, $imageDims) {
+protected function position($opt, $containerDims, $imageDims) {
 	$opt = strtolower($opt);
 	if ($opt == 1 || $opt === 'c') {  // center is most common
 		$x = (int) (($containerDims[0] - $imageDims[0]) / 2);
@@ -105,8 +109,6 @@ private function position($opt, $containerDims, $imageDims) {
 	return new Imagine\Image\Point($x, $y);
 }
 
-public $debugmessages = array('Resizer v0.4.0-pl');
-public $debug = FALSE;  //enable generation of debugging messages
 
 /*
  * @param  modX $modx
