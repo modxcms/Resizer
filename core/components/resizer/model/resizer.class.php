@@ -47,11 +47,10 @@ private $maxsize = FALSE;
  *
  * Returns path+filename on success, FALSE if it can't find the file
  */
-	$file = rawurldecode($src);
-	$file = MODX_BASE_PATH . ltrim($file, '/');
 protected function findFile($src) {
+	$file = MODX_BASE_PATH . ltrim(rawurldecode($src), '/');
 	$file = str_replace($this->basePathPlusUrl, MODX_BASE_PATH, $file);  // if MODX is in a subdir, keep this subdir name from occuring twice
-	if (file_exists($file)) {
+	if (is_readable($file)) {
 		return $file;
 	}
 	return FALSE;
@@ -164,9 +163,9 @@ public function resetDebug() {
  * Returns TRUE/FALSE or success/failure
  */
 public function processImage($input, $output, $options = array()) {
-	if ( !file_exists($input) && !($input = $this->findFile($input)) ) {
-		$this->debugmessages[] = "No such file: $input  ** Skipping **";
 		return FALSE;
+	if ( !is_readable($input) && !($input = $this->findFile($input)) ) {
+		$this->debugmessages[] = 'File not ' . (file_exists($input) ? 'readable': 'found') . ": $input  *** Skipping ***";
 	}
 	if ($this->debug) {
 		$optionsOriginal = is_string($options) ? parse_str($options) : $options;
