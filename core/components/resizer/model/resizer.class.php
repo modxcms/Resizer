@@ -19,11 +19,12 @@
  * Place, Suite 330, Boston, MA 02111-1307 USA
  **/
 
-function resizerLoader($class) {
-	@include_once MODX_CORE_PATH . 'components/resizer/model/' . str_replace('\\', '/', $class) . '.php';
+function imagineLoader($class) {
+	if (substr($class, 0, 8) === 'Imagine\\') {  // ignore anything else
+		require MODX_CORE_PATH . 'components/resizer/model/' . str_replace('\\', '/', $class) . '.php';
+	}
 }
-spl_autoload_register('\resizerLoader');
-
+spl_autoload_register('\imagineLoader');
 
 use Imagine\Image\Box;
 
