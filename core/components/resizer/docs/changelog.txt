@@ -1,5 +1,11 @@
 Resizer Changelog
 
+v0.4.1-pl  [10.11.2013]
+-----------------------
+
+- Make input file checking and class loading a little more robust
+
+
 v0.4.0-pl  [05.10.2013]
 -----------------------
 
