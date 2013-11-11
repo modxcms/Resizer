@@ -31,6 +31,7 @@ class Resizer {
 
 public $debugmessages = array('Resizer v0.4.1');
 public $debug = false;  //enable generation of debugging messages
+public $defaultQuality = 80;
 
 protected $modx;
 protected $imagine;
@@ -394,7 +395,7 @@ public function processImage($input, $output, $options = array()) {
 		}
 
 /* save */
-		$outputOpts = isset($options['q']) ? array('quality' => (int) $options['q']) : array();  // change 'q' to 'quality'
+		$outputOpts = array('quality' => isset($options['q']) ? (int) $options['q'] : $this->defaultQuality);  // change 'q' to 'quality', or use default
 		$image->save($output, $outputOpts);
 	}
 /* error handler */
