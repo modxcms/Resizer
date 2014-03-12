@@ -265,49 +265,68 @@ public function processImage($input, $output, $options = array()) {
 		if (empty($options['zc']) || !$bothDims) {
 			$options['w'] = $width;
 			$options['h'] = $height;
-			if ($newAR < $origAR)  { $height = $width / $origAR; }  // Make sure AR doesn't change. Smaller dimension...
-			elseif ($newAR > $origAR)  { $width = $height * $origAR; }  // ...limits larger
-			$width = round($width);  // clean up
-			$height = round($height);
 
 /* non-zc cropping */
 			if (isset($options['sw']) || isset($options['sh'])) {
-				if ($width > $origWidth && empty($options['aoe'])) {  // first adjust output size if it's too big
-					$width = $origWidth;  // $newAR == $origAR so this is easy
-					$height = $origHeight;
+				if (empty($options['sw']) || $options['sw'] > $origWidth) {
+					$newWidth = $origWidth;
 				}
-				if (!empty($options['sw'])) {
-					$newWidth = $options['sw'] < 1 ? round($width * $options['sw']) : $options['sw'];  // sw < 1 is a %, >= 1 in px
+				else {
+					$newWidth = $options['sw'] < 1 ? round($origWidth * $options['sw']) : $options['sw'];  // sw < 1 is a %, >= 1 in px
 				}
-				if (!empty($options['sh'])) {
-					$newHeight = $options['sh'] < 1 ? round($height * $options['sh']) : $options['sh'];
-				}
-				if (empty($options['sw']) || $newWidth > $width)  { $newWidth = $width; }  // make sure new dims don't exceed the image
-				if (empty($options['sh']) || $newHeight > $height)  { $newHeight = $height; }
 
-				if (isset($options['sx'])) {
+				if (empty($options['sh']) || $options['sh'] > $origHeight) {
+					$newHeight = $origHeight;
+				}
+				else {
+					$newHeight = $options['sh'] < 1 ? round($origHeight * $options['sh']) : $options['sh'];
+				}
+
+				if (empty($options['sx'])) {
+					$cropStartX = isset($options['sx']) ? $options['sx'] : (int) (($origWidth - $newWidth) / 2);  // 0 or center
+				}
+				else {
 					$cropStartX = $options['sx'] < 1 ? round($width * $options['sx']) : $options['sx'];
-					if ($cropStartX + $newWidth > $width)  { $cropStartX = $width - $newWidth; }  // crop box can't go past the right edge
+					if ($cropStartX + $newWidth > $origWidth)  { $cropStartX = $origWidth - $newWidth; }  // crop box can't go past the right edge
+				}
+				if (empty($options['sy'])) {
+					$cropStartY = isset($options['sy']) ? $options['sy'] : (int) (($origHeight - $newHeight) / 2);
 				}
 				else {
-					$cropStartX = (int) (($width - $newWidth) / 2);  // center
-				}
-				if (isset($options['sy'])) {
 					$cropStartY = $options['sy'] < 1 ? round($height * $options['sy']) : $options['sy'];
-					if ($cropStartY + $newHeight > $height)  { $cropStartY = $height - $newHeight; }
-				}
-				else {
-					$cropStartY = (int) (($height - $newHeight) / 2);
+					if ($cropStartY + $newHeight > $origHeight)  { $cropStartY = $origHeight - $newHeight; }
 				}
 				$cropStart = new Imagine\Image\Point($cropStartX, $cropStartY);
 				$cropBox = new Imagine\Image\Box($newWidth, $newHeight);
+				$image->crop($cropStart, $cropBox);
+				unset($cropBox);
+				$origWidth = $newWidth;
+				$origHeight = $newHeight;
+				$origAR = $origWidth / $origHeight;
+				if (($width > $origWidth || $height > $origHeight) && empty($options['aoe'])) {  // adjust output size if it's too big
+					$width = $origWidth;
+					$height = $origHeight;
+					if ($newAR < $origAR)  { $width = round($origHeight * $newAR); }
+					elseif ($newAR > $origAR)  { $height = round($origWidth / $newAR); }
+					$this->debugmessages[] = "w: $width, h: $height, ow: $origWidth, oh: $origHeight";
+				}
+				else {
+					$width = round($width);  // clean up
+					$height = round($height);
+				}
 			}
+			else {
+				if ($newAR < $origAR)  { $height = $width / $origAR; }  // Make sure AR doesn't change. Smaller dimension...
+				elseif ($newAR > $origAR)  { $width = $height * $origAR; }  // ...limits larger
+				$width = round($width);  // clean up
+				$height = round($height);
 /* far */
-			elseif (!empty($options['far']) && $bothDims) {
-				$options['w'] = round($options['w']);
-				$options['h'] = round($options['h']);
-				$farPoint = $this->position($options['far'], array($options['w'], $options['h']), array($width, $height));
-				$farBox = new Imagine\Image\Box($options['w'], $options['h']);
+				if (!empty($options['far']) && $bothDims) {
+					$options['w'] = round($options['w']);
+					$options['h'] = round($options['h']);
+					$farPoint = $this->position($options['far'], array($options['w'], $options['h']), array($width, $height));
+					$farBox = new Imagine\Image\Box($options['w'], $options['h']);
+				}
 			}
 		}
 		else {
