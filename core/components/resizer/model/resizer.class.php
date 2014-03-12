@@ -378,6 +378,19 @@ public function processImage($input, $output, $options = array()) {
 			$image->strip();
 		}
 
+/* filters */
+		if (!empty($options['fltr'])) {
+			if (!is_array($options['fltr'])) {
+				$options['fltr'] = array($options['fltr']);  // in case somebody did fltr= instead of fltr[]=
+			}
+			foreach($options['fltr'] as $fltr) {
+				$filter = explode('|', $fltr);
+				if ($filter[0] === 'usm') {  // right now only unsharp mask is implemented, sort of
+					$image->effects()->sharpen();  // radius, amount and threshold are ignored!
+				}
+			}
+		}
+
 /* bg - finish */
 		if ($hasBG) {
 			$image = $this->imagine->create(
