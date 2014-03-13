@@ -57,6 +57,7 @@ final class Image extends AbstractImage
      *
      * @param resource         $resource
      * @param PaletteInterface $palette
+     * @param null|string      $path
      */
     public function __construct($resource, PaletteInterface $palette, $path = null)
     {
@@ -554,11 +555,12 @@ final class Image extends AbstractImage
      */
     private function saveOrOutput($format, array $options, $filename = null)
     {
+        $format = $this->normalizeFormat($format);
 
         if (!$this->supported($format)) {
             throw new InvalidArgumentException(sprintf(
                 'Saving image in "%s" format is not supported, please use one '.
-                'of the following extension: "%s"', $format,
+                'of the following extensions: "%s"', $format,
                 implode('", "', $this->supported())
             ));
         }
@@ -670,13 +672,33 @@ final class Image extends AbstractImage
     /**
      * Internal
      *
+     * Normalizes a given format name
+     *
+     * @param string $format
+     *
+     * @return string
+     */
+    private function normalizeFormat($format)
+    {
+        $format = strtolower($format);
+
+        if ('jpg' === $format || 'pjpeg' === $format) {
+            $format = 'jpeg';
+        }
+
+        return $format;
+    }
+
+    /**
+     * Internal
+     *
      * Checks whether a given format is supported by GD library
      *
      * @param string $format
      *
      * @return Boolean
      */
-    private function supported(&$format = null)
+    private function supported($format = null)
     {
         $formats = array('gif', 'jpeg', 'png', 'wbmp', 'xbm');
 
@@ -684,18 +706,12 @@ final class Image extends AbstractImage
             return $formats;
         }
 
-        $format  = strtolower($format);
-
-        if ('jpg' === $format || 'pjpeg' === $format) {
-            $format = 'jpeg';
-        }
-
         return in_array($format, $formats);
     }
 
     private function setExceptionHandler()
     {
-        set_error_handler(function($errno, $errstr, $errfile, $errline) {
+        set_error_handler(function ($errno, $errstr, $errfile, $errline) {
 
             if (0 === error_reporting()) {
                 return;
@@ -726,13 +742,14 @@ final class Image extends AbstractImage
      */
     private function getMimeType($format)
     {
+        $format = $this->normalizeFormat($format);
+
         if (!$this->supported($format)) {
             throw new RuntimeException('Invalid format');
         }
 
         static $mimeTypes = array(
             'jpeg' => 'image/jpeg',
-            'jpg'  => 'image/jpeg',
             'gif'  => 'image/gif',
             'png'  => 'image/png',
             'wbmp' => 'image/vnd.wap.wbmp',
