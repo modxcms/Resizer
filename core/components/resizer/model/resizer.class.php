@@ -37,10 +37,9 @@ public $height;
 
 protected $modx;
 protected $imagine;
-
-private $palette;
-private $topLeft;
-private $maxsize = false;
+protected $palette;
+protected $topLeft;
+protected $maxsize;
 
 
 /*
@@ -51,7 +50,7 @@ private $maxsize = false;
  *
  * Returns a Point with the coordinates of the top left corner
  */
-protected function position($opt, $containerDims, $imageDims) {
+protected function startPoint($opt, $containerDims, $imageDims) {
 	$opt = strtolower($opt);
 	if ($opt == 1 || $opt === 'c') {  // center is most common
 		$x = (int) (($containerDims[0] - $imageDims[0]) / 2);
@@ -105,15 +104,15 @@ protected function position($opt, $containerDims, $imageDims) {
 public function __construct(modX &$modx, $graphicsLib = true) {
 	$this->modx =& $modx;
 	if ($graphicsLib === true) {  // if a preference isn't specified, get it from system settings
-		$graphicsLib = $this->modx->getOption('resizer.graphics_library', NULL, 2);
+		$graphicsLib = $this->modx->getOption('resizer.graphics_library', null, 2);
 	}
 	// Decide which graphics library to use and create the appropriate Imagine object
-	if (class_exists('Gmagick', false) && $graphicsLib > 1) {
+	if ($graphicsLib > 1 && class_exists('Gmagick', false)) {
 		$this->debugmessages[] = 'Using Gmagick';
 		set_time_limit(0);
 		$this->imagine = new \Imagine\Gmagick\Imagine();
 	}
-	elseif (class_exists('Imagick', false) && $graphicsLib) {
+	elseif ($graphicsLib && class_exists('Imagick', false)) {
 		$this->debugmessages[] = 'Using Imagick';
 		set_time_limit(0);  // execution time accounting seems strange on some systems. Maybe because of multi-threading?
 		$this->imagine = new \Imagine\Imagick\Imagine();
@@ -150,38 +149,67 @@ public function resetDebug() {
  * Returns true/false or success/failure
  */
 public function processImage($input, $output, $options = array()) {
+	if ($this->debug)  { $startTime = microtime(true); }
 	if (!is_readable($input)) {
 		$this->debugmessages[] = 'File not ' . (file_exists($input) ? 'readable': 'found') . ": $input  *** Skipping ***";
 		return false;
 	}
-	if ($this->debug) {
-		$optionsOriginal = is_string($options) ? parse_str($options) : $options;
-		$startTime = microtime(true);
-	}
-	if ($this->maxsize) {  // if we're using GD we need to check the image will fit in memory
-		$imagesize = @GetImageSize($input);
-		if ($imagesize && $imagesize[0] * $imagesize[1] > $this->maxsize) {  // if there's no size we'll just go for it
-			$this->debugmessages[] = "GD: $input may exceed available memory  ** Skipping **";
-			return false;
-		}
-	}
-	if (is_string($options)) {  // convert an options string to an array if needed
-		$options = parse_str($options);
-	}
+	if (is_string($options))  { $options = parse_str($options); }  // convert an options string to an array if needed
+	$inputParams = array('options' => $options);
 	$outputIsJpg = strncasecmp('jp', pathinfo($input, PATHINFO_EXTENSION), 2) === 0;  // extension determines image format
 	try {
 		$image = $this->imagine->open($input);
 
 /* initial dimensions */
 		$size = $image->getSize();
-		$origWidth = $size->getWidth();
-		$origHeight = $size->getHeight();
+		$origWidth = $inputParams['width'] = $size->getWidth();
+		$origHeight = $inputParams['height'] = $size->getHeight();
+		if ($this->maxsize && $origWidth * $origHeight > $this->maxsize) {  // if we're using GD we need to check the image will fit in memory
+			$this->debugmessages[] = "GD: $input may exceed available memory  ** Skipping **";
+			return false;
+		}
+
+/* source crop */
+		if (isset($options['sw']) || isset($options['sh'])) {
+			if (empty($options['sw']) || $options['sw'] > $origWidth) {
+				$newWidth = $origWidth;
+			}
+			else {
+				$newWidth = $options['sw'] < 1 ? round($origWidth * $options['sw']) : $options['sw'];  // sw < 1 is a %, >= 1 in px
+			}
+			if (empty($options['sh']) || $options['sh'] > $origHeight) {
+				$newHeight = $origHeight;
+			}
+			else {
+				$newHeight = $options['sh'] < 1 ? round($origHeight * $options['sh']) : $options['sh'];
+			}
+			if ($newWidth !== $origWidth || $newHeight !== $origHeight) {  // only if something will actually be cropped
+				if (empty($options['sx'])) {
+					$cropStartX = isset($options['sx']) ? $options['sx'] : (int) (($origWidth - $newWidth) / 2);  // 0 or center
+				}
+				else {
+					$cropStartX = $options['sx'] < 1 ? round($origWidth * $options['sx']) : $options['sx'];
+					if ($cropStartX + $newWidth > $origWidth)  { $cropStartX = $origWidth - $newWidth; }  // crop box can't go past the right edge
+				}
+				if (empty($options['sy'])) {
+					$cropStartY = isset($options['sy']) ? $options['sy'] : (int) (($origHeight - $newHeight) / 2);
+				}
+				else {
+					$cropStartY = $options['sy'] < 1 ? round($origHeight * $options['sy']) : $options['sy'];
+					if ($cropStartY + $newHeight > $origHeight)  { $cropStartY = $origHeight - $newHeight; }
+				}
+				$scStart = new Imagine\Image\Point($cropStartX, $cropStartY);
+				$scBox = new Imagine\Image\Box($newWidth, $newHeight);
+				$image->crop($scStart, $scBox);
+				$origWidth = $newWidth;  // update input dimensions to the new cropped size
+				$origHeight = $newHeight;
+			}
+		}
+		$origAR = $origWidth / $origHeight;  // original image aspect ratio
 
 		// use width/height if specified
 		if (isset($options['w']))  { $width = $options['w']; }
 		if (isset($options['h']))  { $height = $options['h']; }
-
-		$origAR = $origWidth / $origHeight;  // original image aspect ratio
 
 		// override with any orientation-specific dimensions
 		$aspect = round($origAR, 2);
@@ -205,15 +233,14 @@ public function processImage($input, $output, $options = array()) {
 				$height = $origHeight;
 				$width = $origWidth;
 			}
-			else {
-				$width = $height * $origAR;
-			}
+			else  { $width = $height * $origAR; }
 			$bothDims = false;
 		}
 		if (empty($height)) {
 			$height = $width / $origAR;
 			$bothDims = false;
 		}
+		$newAR = $width / $height;
 
 /* scale */
 		if (!empty($options['scale'])) {
@@ -224,94 +251,26 @@ public function processImage($input, $output, $options = array()) {
 				$hRequested = $height * $options['scale'];
 				$options['scale'] = ($hScale > 1 && $wScale > 1) ? min($hScale, $wScale, $options['scale']) : 1;
 			}
-			$width = $width * $options['scale'];
-			$height = $height * $options['scale'];
-		}
-
-		$newAR = $width / $height;
-
-		$hasBG = false;
-/* bg - start */
-		if ( (!empty($options['bg']) && strncasecmp('jp', pathinfo($input, PATHINFO_EXTENSION), 2) !== 0) ||
-			 (!empty($options['far']) && $bothDims && empty($options['zc'])) ) {
-			if (!isset($this->palette)) {
-				$this->palette = new Imagine\Image\Palette\RGB();
-				$this->topLeft = new Imagine\Image\Point(0, 0);
-			}
-			if (!empty($options['bg'])) {
-				$bgColor = explode('/', $options['bg']);
-				$bgColor[1] = isset($bgColor[1]) ? $bgColor[1] : 100;
-			}
-			else {
-				$bgColor = array('ffffff', 100);
-			}
-			$backgroundColor = $this->palette->color($bgColor[0], 100 - $bgColor[1]);
-			$hasBG = true;
+			$options['w'] = $width *= $options['scale'];
+			$options['h'] = $height *= $options['scale'];
 		}
 
 		if (empty($options['zc']) || !$bothDims) {
-			$options['w'] = $width;
-			$options['h'] = $height;
-
 /* non-zc cropping */
-			if (isset($options['sw']) || isset($options['sh'])) {
-				if (empty($options['sw']) || $options['sw'] > $origWidth) {
-					$newWidth = $origWidth;
-				}
-				else {
-					$newWidth = $options['sw'] < 1 ? round($origWidth * $options['sw']) : $options['sw'];  // sw < 1 is a %, >= 1 in px
-				}
-
-				if (empty($options['sh']) || $options['sh'] > $origHeight) {
-					$newHeight = $origHeight;
-				}
-				else {
-					$newHeight = $options['sh'] < 1 ? round($origHeight * $options['sh']) : $options['sh'];
-				}
-
-				if (empty($options['sx'])) {
-					$cropStartX = isset($options['sx']) ? $options['sx'] : (int) (($origWidth - $newWidth) / 2);  // 0 or center
-				}
-				else {
-					$cropStartX = $options['sx'] < 1 ? round($width * $options['sx']) : $options['sx'];
-					if ($cropStartX + $newWidth > $origWidth)  { $cropStartX = $origWidth - $newWidth; }  // crop box can't go past the right edge
-				}
-				if (empty($options['sy'])) {
-					$cropStartY = isset($options['sy']) ? $options['sy'] : (int) (($origHeight - $newHeight) / 2);
-				}
-				else {
-					$cropStartY = $options['sy'] < 1 ? round($height * $options['sy']) : $options['sy'];
-					if ($cropStartY + $newHeight > $origHeight)  { $cropStartY = $origHeight - $newHeight; }
-				}
-				$cropStart = new Imagine\Image\Point($cropStartX, $cropStartY);
-				$cropBox = new Imagine\Image\Box($newWidth, $newHeight);
-				$image->crop($cropStart, $cropBox);
-				unset($cropBox);
-				$origWidth = $newWidth;
-				$origHeight = $newHeight;
-				$origAR = $origWidth / $origHeight;
-				if (($width > $origWidth || $height > $origHeight) && empty($options['aoe'])) {  // adjust output size if it's too big
-					$width = $origWidth;
-					$height = $origHeight;
-					if ($newAR < $origAR)  { $width = round($origHeight * $newAR); }
-					elseif ($newAR > $origAR)  { $height = round($origWidth / $newAR); }
-					$this->debugmessages[] = "w: $width, h: $height, ow: $origWidth, oh: $origHeight";
-				}
-				else {
-					$width = round($width);  // clean up
-					$height = round($height);
-				}
-			}
-			else {
-				if ($newAR < $origAR)  { $height = $width / $origAR; }  // Make sure AR doesn't change. Smaller dimension...
-				elseif ($newAR > $origAR)  { $width = $height * $origAR; }  // ...limits larger
-				$width = round($width);  // clean up
-				$height = round($height);
+			if ($newAR < $origAR)  { $height = $width / $origAR; }  // Make sure AR doesn't change. Smaller dimension...
+			elseif ($newAR > $origAR)  { $width = $height * $origAR; }  // ...limits larger
+			$width = round($width);  // clean up
+			$height = round($height);
 /* far */
-				if (!empty($options['far']) && $bothDims) {
-					$options['w'] = round($options['w']);
-					$options['h'] = round($options['h']);
-					$farPoint = $this->position($options['far'], array($options['w'], $options['h']), array($width, $height));
+			if (!empty($options['far']) && $bothDims) {
+				$options['w'] = round($options['w']);
+				$options['h'] = round($options['h']);
+				if ($options['w'] > $width || $options['h'] > $height) {
+					$farPoint = $this->startPoint(
+						$options['far'],
+						array($options['w'], $options['h']),
+						array($width, $height)
+					);
 					$farBox = new Imagine\Image\Box($options['w'], $options['h']);
 				}
 			}
@@ -346,17 +305,20 @@ public function processImage($input, $output, $options = array()) {
 				$newHeight = $height = round($height);
 			}
 
-			$cropStart = $this->position($options['zc'], array($newWidth, $newHeight), array($width, $height));
+			$cropStart = $this->startPoint(
+				$options['zc'],
+				array($newWidth, $newHeight),
+				array($width, $height)
+			);
 			$cropBox = new Imagine\Image\Box($width, $height);
 			$width = $newWidth;
 			$height = $newHeight;
 		}
 
 /* resize, aoe */
-		if ( ($width < $origWidth && $height < $origHeight) || !empty($options['aoe']) ) {
+		if ( $didScale = ($width < $origWidth && $height < $origHeight) || !empty($options['aoe']) ) {
 			$imgBox = new Imagine\Image\Box($width, $height);
 			$image->scale($imgBox);
-			$didScale = true;
 		}
 /* qmax */
 		elseif (isset($options['qmax']) && $outputIsJpg && empty($options['aoe']) && isset($options['q'])) {
@@ -368,11 +330,11 @@ public function processImage($input, $output, $options = array()) {
 			else { $options['q'] = $options['qmax']; }  // otherwise qmax
 		}
 
+/* crop */
+		if (isset($cropBox))  { $image->crop($cropStart, $cropBox); }
 
 /* strip */
-		if (!empty($options['strip'])) {  // convert to sRGB, remove any ICC profile and metadata
-			$image->strip();
-		}
+		if (!empty($options['strip']))  { $image->strip(); }  // convert to sRGB, remove any ICC profile and metadata
 
 /* filters */
 		if (!empty($options['fltr'])) {
@@ -387,20 +349,27 @@ public function processImage($input, $output, $options = array()) {
 			}
 		}
 
-/* bg - finish */
-		if ($hasBG) {
-			$image = $this->imagine->create(
-				isset($farBox) ? $farBox : (isset($imgBox) ? $imgBox : new Imagine\Image\Box($width, $height)),
-				$this->palette->color($bgColor[0], 100 - $bgColor[1])
-			)->paste(
-				$image,
-				isset($farPoint) ? $farPoint : $this->topLeft
-			);
+/* bg */
+		if ( $hasBG = (isset($options['bg']) && !$outputIsJpg) || isset($farBox)) {
+			if (!isset($this->palette)) {
+				$this->palette = new Imagine\Image\Palette\RGB();
+				$this->topLeft = new Imagine\Image\Point(0, 0);
+			}
+			if (isset($options['bg']))  {
+				$bgColor = explode('/', $options['bg']);
+				$bgColor[1] = isset($bgColor[1]) ? $bgColor[1] : 100;
+			}
+			else  { $bgColor = array('ffffff', 100); }
+
+			$backgroundColor = $this->palette->color($bgColor[0], 100 - $bgColor[1]);
+			if (isset($cropBox))  { $bgBox = $cropBox; }
+			elseif (isset($farBox))  { $bgBox = $farBox; }
+			elseif (isset($imgBox))  { $bgBox = $imgBox; }
+			else  { $bgBox = new Imagine\Image\Box($width, $height); }
+			$image = $this->imagine->create($bgBox,	$this->palette->color($bgColor[0], 100 - $bgColor[1]))
+								   ->paste($image, isset($farPoint) ? $farPoint : $this->topLeft);
 		}
 
-/* crop */
-		if (isset($cropBox)) {
-			$image->crop($cropStart, $cropBox);
 /* debug info */
 		if ($this->debug) {
 			$debugTime = microtime(true);
