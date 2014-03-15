@@ -40,23 +40,8 @@ protected $imagine;
 
 private $palette;
 private $topLeft;
-private $basePathPlusUrl;
 private $maxsize = false;
 
-/*
- * Makes a token effort to look for a file
- * $src   string   path+filename to look for
- *
- * Returns path+filename on success, false if it can't find the file
- */
-protected function findFile($src) {
-	$file = MODX_BASE_PATH . ltrim(rawurldecode($src), '/');
-	$file = str_replace($this->basePathPlusUrl, MODX_BASE_PATH, $file);  // if MODX is in a subdir, keep this subdir name from occuring twice
-	if (is_readable($file)) {
-		return $file;
-	}
-	return false;
-}
 
 /*
  * Positions an image within a container
@@ -142,7 +127,6 @@ public function __construct(modX &$modx, $graphicsLib = true) {
 		elseif ($magnitude === 'K')  { $this->maxsize /= 1024; }
 		$this->maxsize = ($this->maxsize - 18) * 209715;  // 20% of memory_limit, in bytes. -18MB for MODX and PHP overhead
 	}
-	$this->basePathPlusUrl = MODX_BASE_PATH . ltrim(MODX_BASE_URL, '/');  // used to weed out duplicate subdirs
 }
 
 
@@ -166,7 +150,7 @@ public function resetDebug() {
  * Returns true/false or success/failure
  */
 public function processImage($input, $output, $options = array()) {
-	if ( !is_readable($input) && !($input = $this->findFile($input)) ) {
+	if (!is_readable($input)) {
 		$this->debugmessages[] = 'File not ' . (file_exists($input) ? 'readable': 'found') . ": $input  *** Skipping ***";
 		return false;
 	}
