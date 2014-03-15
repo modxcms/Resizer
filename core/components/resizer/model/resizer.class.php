@@ -1,7 +1,7 @@
 <?php
 /**
  * Resizer
- * Copyright 2013 Jason Grant
+ * Copyright 2013-2014 Jason Grant
  * Please see the GitHub page for documentation or to report bugs:
  * https://github.com/oo12/Resizer
  *
@@ -29,7 +29,7 @@ spl_autoload_register('\imagineLoader');
 
 class Resizer {
 
-public $debugmessages = array('Resizer v0.4.1');
+public $debugmessages = array('Resizer v0.5.0');
 public $debug = false;  //enable generation of debugging messages
 public $defaultQuality = 80;
 public $width;

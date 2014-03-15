@@ -6,14 +6,14 @@ $components = array(
 	'packageName' => 'Resizer',  /* No spaces, no dashes */
 	'packageNameLower' => $packageNameLower,
 	'packageDescription' => 'A lightweight, modern image resizer for MODX',
-	'version' => '0.4.1',
+	'version' => '0.5.0',
 	'release' => 'pl',
 	'author' => 'Jason Grant',
 	'email' => '',
 	'authorUrl' => 'https://github.com/oo12',
 	'authorSiteName' => 'GitHub',
 	'packageDocumentationUrl' => 'https://github.com/oo12/Resizer',
-	'copyright' => '2013',
+	'copyright' => '2014',
 
 	/* no need to edit this except to change format */
 	'createdon' => strftime('%m-%d-%Y'),

@@ -1,5 +1,17 @@
 Resizer Changelog
 
+v0.5.0-pl  [15.03.2014]
+-----------------------
+
+- [#3] Add partial support for fltr[]=usm
+- [#4] Fix execution order for source crop parameters. Now works with
+  Image+ 2.2.
+- Improve debug output
+- Add properties for final width and height
+- Merge latest Imagine commits
+- Several minor performance tweaks
+
+
 v0.4.1-pl  [10.11.2013]
 -----------------------
 
