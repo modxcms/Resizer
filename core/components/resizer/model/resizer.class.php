@@ -381,16 +381,6 @@ public function processImage($input, $output, $options = array()) {
 			else { $options['q'] = $options['qmax']; }  // otherwise qmax
 		}
 
-/* debug info */
-		if ($this->debug) {
-			$this->debugmessages[] = 'Input options:' . substr(var_export($optionsOriginal, true), 7, -3);  // print all options, stripping off array()
-			$this->debugmessages[] = 'Output options:' . substr(var_export($options, true), 7, -3);
-			$this->debugmessages[] = "\nOriginal - w: $origWidth | h: $origHeight " . sprintf("(%2.2f MP)", $origWidth * $origHeight / 1e6) .
-				(isset($wRequested) ? "\nRequested - w: " . round($wRequested) . ' | h: ' . round($hRequested) : '') .
-				"\nNew - w: $width | h: $height" . (isset($didScale) ? '' : ' [Not scaled: same size or insufficient input resolution]') .
-				(isset($cropBox) ? "\nCrop Box - w: {$cropBox->getWidth()} | h: {$cropBox->getHeight()}\nCrop Start - x: $cropStartX | y: $cropStartY" : '') .
-				($hasBG ? "\nBackground color: {$bgColor[0]} | opacity: {$bgColor[1]}" : '');
-		}
 
 /* strip */
 		if (!empty($options['strip'])) {  // convert to sRGB, remove any ICC profile and metadata
@@ -424,6 +414,37 @@ public function processImage($input, $output, $options = array()) {
 /* crop */
 		if (isset($cropBox)) {
 			$image->crop($cropStart, $cropBox);
+/* debug info */
+		if ($this->debug) {
+			$debugTime = microtime(true);
+			$this->debugmessages[] = 'Input options:' . substr(var_export($inputParams['options'], true), 7, -3);  // print all options, stripping off array()
+			$changed = array();  // note any options which may have been changed during processing
+			foreach (array('w', 'h', 'scale', 'q') as $opt) {
+				if ($inputParams['options'][$opt] != $options[$opt])  { $changed[$opt] = $options[$opt]; }
+			}
+			if ($changed) {
+				$this->debugmessages[] = 'Modified options:' . substr(var_export($changed, true), 7, -3);
+			}
+			$this->debugmessages[] = "Original - w: {$inputParams['width']} | h: {$inputParams['height']} " . sprintf("(%2.2f MP)", $inputParams['width'] * $inputParams['height'] / 1e6);
+			if (isset($scBox)) {
+				$this->debugmessages[] = "Source area - start: ($cropStartX, $cropStartY) | box: {$scBox->getWidth()} x {$scBox->getHeight()}";
+			}
+			if (isset($wRequested)) {
+				$this->debugmessages[] = "Requested - w: " . round($wRequested) . ' | h: ' . round($hRequested);
+			}
+			if (!isset($wRequested) || !$didScale) {
+				$this->debugmessages[] = "New - w: $width | h: $height" . ($didScale ? '' : ' [Not scaled: same size or insufficient input resolution]');
+			}
+			if (isset($farPoint)) {
+				$this->debugmessages[] = "FAR - start: ({$farPoint->getX()},{$farPoint->getY()}) | box: {$options['w']} x {$options['h']}";
+			}
+			if (isset($cropBox)) {
+				$this->debugmessages[] = "ZC - start: ({$cropStart->getX()},{$cropStart->getY()}) | box: {$cropBox->getWidth()} x {$cropBox->getHeight()}";
+			}
+			if ($hasBG) {
+				$this->debugmessages[] = "Background color: {$bgColor[0]} | opacity: {$bgColor[1]}";
+			}
+			$debugTime = microtime(true) - $debugTime;
 		}
 
 /* save */
@@ -433,13 +454,15 @@ public function processImage($input, $output, $options = array()) {
 /* error handler */
 	catch(Imagine\Exception\Exception $e) {
 		$this->debugmessages[] = '*** Error *** ' . $e->getMessage();
+		$this->debugmessages[] = "Input file: $input";
+		$this->debugmessages[] = 'Input options: ' . substr(var_export($inputParams['options'], true), 7, -3);
 		return false;
 	}
 
 /* debug info (timing) */
 	if ($this->debug) {
 		$this->debugmessages[] = "Wrote $output";
-		$this->debugmessages[] = 'Execution time: ' . round((microtime(true) - $startTime) * 1e3) . ' ms';
+		$this->debugmessages[] = 'Execution time: ' . round((microtime(true) - $startTime - $debugTime) * 1e3) . ' ms';
 	}
 	return true;
 }
