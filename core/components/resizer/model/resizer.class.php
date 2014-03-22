@@ -257,8 +257,20 @@ public function processImage($input, $output, $options = array()) {
 
 		if (empty($options['zc']) || !$bothDims) {
 /* non-zc cropping */
-			if ($newAR < $origAR)  { $height = $width / $origAR; }  // Make sure AR doesn't change. Smaller dimension...
-			elseif ($newAR > $origAR)  { $width = $height * $origAR; }  // ...limits larger
+			if ($newAR < $origAR) {  // Make sure AR doesn't change. Smaller dimension...
+				if ($origWidth < $options['w'] && empty($options['aoe'])) {
+					$options['w'] = $width = $origWidth;
+					$options['h'] = $width / $newAR;
+				}
+				$height = $width / $origAR;
+			}
+			elseif ($newAR > $origAR) {  // ...limits larger
+				if ($origHeight < $options['h'] && empty($options['aoe'])) {
+					$options['h'] = $height = $origHeight;
+					$options['w'] = $height * $newAR;
+				}
+				$width = $height * $origAR;
+			}
 			$width = round($width);  // clean up
 			$height = round($height);
 /* far */
