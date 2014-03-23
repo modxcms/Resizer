@@ -135,7 +135,6 @@ public function __construct(modX &$modx, $graphicsLib = true) {
  */
 public function resetDebug() {
 	$this->debugmessages = array_slice($this->debugmessages, 0, 2);
-	$this->width = $this->height = null;
 }
 
 
@@ -154,6 +153,7 @@ public function processImage($input, $output, $options = array()) {
 		$this->debugmessages[] = 'File not ' . (file_exists($input) ? 'readable': 'found') . ": $input  *** Skipping ***";
 		return false;
 	}
+	$this->width = $this->height = null;
 	if (is_string($options))  { $options = parse_str($options); }  // convert an options string to an array if needed
 	$inputParams = array('options' => $options);
 	$outputIsJpg = strncasecmp('jp', pathinfo($input, PATHINFO_EXTENSION), 2) === 0;  // extension determines image format
@@ -284,6 +284,8 @@ public function processImage($input, $output, $options = array()) {
 						array($width, $height)
 					);
 					$farBox = new Imagine\Image\Box($options['w'], $options['h']);
+					$this->width = $options['w'];
+					$this->height = $options['h'];
 				}
 			}
 		}
@@ -323,6 +325,8 @@ public function processImage($input, $output, $options = array()) {
 				array($width, $height)
 			);
 			$cropBox = new Imagine\Image\Box($width, $height);
+			$this->width = $width;
+			$this->height = $height;
 			$width = $newWidth;
 			$height = $newHeight;
 		}
@@ -418,8 +422,8 @@ public function processImage($input, $output, $options = array()) {
 /* save */
 		$outputOpts = array('quality' => isset($options['q']) ? (int) $options['q'] : $this->defaultQuality);  // change 'q' to 'quality', or use default
 		$image->save($output, $outputOpts);
-		$this->width = $width;
-		$this->height = $height;
+		if (!$this->width)  { $this->width = $width; }
+		if (!$this->height)  { $this->height = $height; }
 	}
 /* error handler */
 	catch(Imagine\Exception\Exception $e) {
