@@ -29,7 +29,7 @@ spl_autoload_register('\imagineLoader');
 
 class Resizer {
 
-public $debugmessages = array('Resizer v0.5.0');
+public $debugmessages = array('Resizer v0.5.1');
 public $debug = false;  //enable generation of debugging messages
 public $defaultQuality = 80;
 public $width;

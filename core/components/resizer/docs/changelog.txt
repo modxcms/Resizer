@@ -1,5 +1,12 @@
 Resizer Changelog
 
+v0.5.1-pl  [23.03.2014]
+-----------------------
+
+- Fix handing of far parameter for undersized images when aoe=0
+- Fix reported output dimensions in some cases
+
+
 v0.5.0-pl  [15.03.2014]
 -----------------------
 
