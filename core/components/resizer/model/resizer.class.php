@@ -359,9 +359,189 @@ public function processImage($input, $output, $options = array()) {
 			}
 			foreach($options['fltr'] as $fltr) {
 				$filter = explode('|', $fltr);
-				if ($filter[0] === 'usm') {  // right now only unsharp mask is implemented, sort of
-					$image->effects()->sharpen();  // radius, amount and threshold are ignored!
-				}
+				switch ($filter[0]) {
+                                    
+                                    case 'usm': // right now only unsharp mask is implemented, sort of
+                                        $image->effects()->sharpen();  // radius, amount and threshold are ignored!
+                                        break;
+
+                                    case 'wmt': // Text Watermark
+                                    	
+                                        // + text (string) : filter[1]
+                                        // + font size (point) (integer) : filter[2]
+                                        // + text position (string) : filter[3]
+                                        //      TL, TR, BL, BR, T, C, B, L, R : top left, top right, ...
+                                        //      0x0 : X x Y position
+                                        //	@TODO : * for tile
+                                        // + font color hex : filter[4]
+                                        // + font file : filter[5]
+                                        // + text watermark opacity : filter[6]
+                                        $filter[6] = (isset($filter[6]) && $filter[6] >= 0 && $filter[6] <= 100) ? $filter[6] : 100;
+                                        // + edge IN PIXELS ! between watermark and image border : filter[7]
+                                        $filter[7] = (is_numeric($filter[7]) && $filter[7] >= 0 ) ? $filter[7] : 0;
+					// + watermark angle 
+                                        $filter[8] = 0; // @TODO Don't change for the moment: position x,y calculation doesnt take care of rotation
+                                        // + watermark text background color
+                                        $filter[9] = (isset($filter[9])) ? $filter[9] : '#000';
+                                        // + watermark text background opacity
+                                        $filter[10] = (isset($filter[10]) && $filter[10] >= 0 && $filter[10] <= 100) ? $filter[10] : '0';
+
+                                        
+                                        if(strpos($filter[5], $_SERVER['DOCUMENT_ROOT']) == false) {
+                                             $filter[5] = $_SERVER['DOCUMENT_ROOT'].'/'.trim($filter[5],'/');
+                                             $this->debugmessages[] = 'Filter watermak : Path is now '.$filter[5];
+                                        }
+                                        
+                                        if( empty($filter[5]) || !file_exists($filter[5]) || !is_readable($filter[5])) {
+                                            $this->debugmessages[] = '***Error*** Filter watermak : Cannot use font file '.$filter[5];  
+                                            break;
+                                        }
+                                        
+                                        $this->debugmessages[] = 'Filter watermark : text watermark "'.$filter[1].'" will be aligned on '.$filter[3];
+                                        
+                                        $size = $image->getSize(); // Image size
+                                        $imageWidth = $size->getWidth();
+                                        $imageHeight = $size->getHeight();
+                                        $palette = new Imagine\Image\Palette\RGB(); // Palette color instance
+                                        $font = $this->imagine->font($filter[5], $filter[2], $palette->color($filter[4],$filter[6])); // Set font
+                                        
+                                        $fontbox = $font->box($filter[1],$filter[2]); // Used to get text watermark size
+                                        $wSizeWidth = $fontbox->getWidth(); // Text watermark width
+                                        $wSizeHeight = $fontbox->getHeight(); // Text watermark height
+                                        $watermark = new Imagine\Image\Box($wSizeWidth,$wSizeHeight,$palette->color($filter[9],$filter[10])); // Used to add background color to the text box 
+                                        
+                                        if($filter[2] == 'TL') { // Top, left
+                                            $watermarkX = $watermarkY = $filter[7];
+                                        } elseif ($filter[2] == 'TR') { // Top, right
+                                            $watermarkX = $imageWidth - $wSizeWidth - $filter[7];
+                                            $watermarkY = $filter[7];
+                                        } elseif ($filter[2] == 'BL') { // Bottom, left
+                                            $watermarkX = $filter[7];
+                                            $watermarkY = $imageHeight - $wSizeHeight - $filter[7];
+                                        } elseif ($filter[2] == 'BR') { // Bottom, right
+                                            $watermarkX = $imageWidth - $wSizeWidth - $filter[7];
+                                            $watermarkY = $imageHeight - $wSizeHeight - $filter[7];
+                                        } elseif ($filter[2] == 'C') { // Middle, center
+                                            $watermarkX = ( $imageWidth - $wSizeWidth ) / 2;
+                                            $watermarkY = ( $imageHeight - $wSizeHeight ) / 2;
+                                        } elseif ($filter[2] == 'T') { // Top, center
+                                            $watermarkX = $filter[7];
+                                            $watermarkY = ( $imageHeight - $wSizeHeight ) / 2;
+                                        } elseif ($filter[2] == 'B') { // Bottom, center
+                                            $watermarkX = ( $imageWidth - $wSizeWidth ) / 2;
+                                            $watermarkY = $imageHeight - $wSizeHeight - $filter[7];
+                                        } elseif ($filter[2] == 'L') { // Middle, left
+					    $watermarkX = $filter[7];
+                                            $watermarkY = ( $imageHeight - $wSizeHeight ) / 2;
+                                        } elseif ($filter[2] == 'R') { // Middle, right
+					    $watermarkX = $imageWidth - $wSizeWidth - $filter[7];
+                                            $watermarkY = ( $imageHeight - $wSizeHeight ) / 2;
+                                        } else { // XxY position
+                                            $xy = explode('x',$filter[2]);
+                                            $watermarkX = $filter[7] + $xy[0];
+                                            $watermarkY = $filter[7] + $xy[1];
+                                        } 
+                                        
+                                        $watermarkX = ($watermarkX > 0 && is_numeric($watermarkX)) ? $watermarkX : 0;
+                                        $watermarkY = ($watermarkY > 0 && is_numeric($watermarkY)) ? $watermarkY : 0;
+                                        
+                                        $this->debugmessages[] = 'Filter watermark : coords '.$watermarkX.','.$watermarkY;
+                                        
+                                        $position = new Imagine\Image\Point($watermarkX, $watermarkY);                                        
+                                        
+                                        //$image->draw()->text($filter[1], $font, $position, $filter[8]);
+                                        $image->paste($watermark, $position); // Used instead so text can have background color
+                                        
+                                        break;
+                                    
+                                    
+                                    case 'wmi': // Image watermark
+                                        
+                                        // + watermark image file path (string) : filter[1]
+                                        // + watermark position (string) : filter[2]
+                                        //      TL, TR, BL, BR, T, C, B, L, R : top left, top right, ...
+                                        //      0x0 : X x Y position
+                                        //	@TODO : * for tile
+                                        // + @TODO watermark opacity (int) : filter[3] (1-100) 
+                                        //      found nothing else but use png transparency...
+                                        // + watermark rotation (int) : filter[4]
+                                        $filter[4] = (isset($filer[4]) && is_numeric($filer[4])) ? $filter[4] : 0;
+					//   @TODO other parameters...
+                                       
+                                        
+                                        if( empty($filter[1]) || !file_exists($filter[1]) || !is_readable($filter[1])) {
+                                            $this->debugmessages[] = '***Error*** Filter watermak : No readable image at '.$filter[1];  
+                                            break;
+                                        }
+                                        
+                                        $this->debugmessages[] = 'Filter watermark : image watermark '.$filter[1].' - Align on '.$filter[2];
+                                        
+                                        $size      = $image->getSize();
+                                        $imageWidth = $size->getWidth();
+                                        $imageHeight = $size->getHeight();
+                                        
+                                        $watermark = $this->imagine->open($filter[1]);
+                                        $wSize     = $watermark->getSize();
+                                        $watermarkWidth = $wSize->getWidth();
+                                        $watermarkHeight = $wSize->getHeight();
+
+                                        $wBox = new Imagine\Image\Box($watermarkWidth, $watermarkHeight);
+                                        if($watermarkWidth > $imageWidth || $watermarkHeight > $imageHeight) {
+                                            $wBoxResized = $wBox->widen($imageWidth);
+                                            if($wBoxResized->getHeight() > $imageHeight) {
+                                                $wBoxResized = $wBox->heighten($imageHeight);
+                                            }
+					    // Replace watermark size values
+                                            $watermark->scale($wBoxResized);
+                                            $wSacleSize = $watermark->getSize();
+                                            $watermarkWidth = $wSacleSize->getWidth();
+                                            $watermarkHeight = $wSacleSize->getHeight();                                            
+                                        }
+                                        
+                                        if($filter[2] == 'TL') { // Top, left
+                                            $watermarkX = $watermarkY = 0;
+                                        } elseif ($filter[2] == 'TR') { // Top, right
+                                            $watermarkX = $imageWidth - $watermarkWidth;
+                                            $watermarkY = 0;
+                                        } elseif ($filter[2] == 'BL') { // Bottom, left
+                                            $watermarkX = 0;
+                                            $watermarkY = $imageHeight - $watermarkHeight;
+                                        } elseif ($filter[2] == 'BR') { // Bottom, right
+                                            $watermarkX = $imageWidth - $watermarkWidth;
+                                            $watermarkY = $imageHeight - $watermarkHeight;
+                                        } elseif ($filter[2] == 'C') { // Middle, center
+                                            $watermarkX = ( $imageWidth - $watermarkWidth ) / 2;
+                                            $watermarkY = ( $imageHeight - $watermarkHeight ) / 2;
+                                        } elseif ($filter[2] == 'T') { // Top, center
+                                            $watermarkX = 0;
+                                            $watermarkY = ( $imageHeight - $watermarkHeight ) / 2;
+                                        } elseif ($filter[2] == 'B') { // Bottom, center
+                                            $watermarkX = ( $imageWidth - $watermarkWidth ) / 2;
+                                            $watermarkY = $imageHeight - $watermarkHeight;
+                                        } elseif ($filter[2] == 'L') { // Middle, left
+					    $watermarkX = 0;
+                                            $watermarkY = ( $imageHeight - $watermarkHeight ) / 2;
+                                        } elseif ($filter[2] == 'R') { // Middle, right
+					    $watermarkX = $imageWidth - $watermarkWidth;
+                                            $watermarkY = ( $imageHeight - $watermarkHeight ) / 2;
+                                        } else { // XxY position
+                                            $xy = explode('x',$filter[2]);
+                                            $watermarkX = $xy[0];
+                                            $watermarkY = $xy[1];
+                                        }     
+                                        
+                                        $watermarkX = ($watermarkX > 0 && is_numeric($watermarkX)) ? $watermarkX : 0;
+                                        $watermarkY = ($watermarkY > 0 && is_numeric($watermarkY)) ? $watermarkY : 0;
+                                        
+                                        $this->debugmessages[] = 'Filter watermark : coords '.$watermarkX.','.$watermarkY;
+                                        
+                                        $position = new Imagine\Image\Point($watermarkX, $watermarkY);
+
+                                        $image->paste($watermark, $position);
+                                        
+                                        break;
+                                        
+                                }
 			}
 		}
 
