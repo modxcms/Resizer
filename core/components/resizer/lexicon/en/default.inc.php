@@ -35,4 +35,4 @@
  **/
 
 $_lang['setting_resizer.graphics_library'] = 'Preferred Graphics Library';
-$_lang['setting_resizer.graphics_library_desc'] = '<b>2</b>: Auto / Gmagick<br /><b>1</b>: Imagick<br /><b>0</b>: GD<br />On Auto, Resizer will select the best available library. Use another value to limit its search. Check phpinfo() on your system to find out what you&rsquo;ve got.<br /><strong>Default:</strong> 2';
+$_lang['setting_resizer.graphics_library_desc'] = '<b>2</b>: Auto / Imagick<br /><b>1</b>: Gmagick<br /><b>0</b>: GD<br />On Auto, Resizer will select the best available library. Use another value to limit its search. Check phpinfo() on your system to find out what you&rsquo;ve got.<br /><strong>Default:</strong> 2';

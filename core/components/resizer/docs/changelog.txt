@@ -1,5 +1,19 @@
 Resizer Changelog
 
+v1.0.0-rc1
+------------
+
+- Structural overhaul: core functionality now bundled as a Composer
+  package (oo12/Reductionist)
+- Performance improvements for thumbnailing large jpegs using Imagick
+  or Gmagick
+- Add preliminary support for watermarking: wmt and wmi filters
+  (hat tip funkbilly)
+- Add auto CMYK to RGB conversion and strip embedded profiles/metadata
+  to reduce thumbnail size
+- Fix quality scaling when zoom cropping
+
+
 v0.5.1-pl  [23.03.2014]
 -----------------------
 

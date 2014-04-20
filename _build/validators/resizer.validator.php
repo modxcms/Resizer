@@ -28,49 +28,75 @@
 if ($object->xpdo) {
 	$modx =& $object->xpdo;
 	switch ($options[xPDOTransport::PACKAGE_ACTION]) {
+		case xPDOTransport::ACTION_UPGRADE:
+			// move an existing non-default jpeg quality setting into the new global options
+			$graphicsLib = $modx->getOption('resizer.graphics_library', null, false);
+			if ($graphicsLib == 1) {
+				$setting = $modx->getObject('modSystemSetting', 'resizer.graphics_library');
+				$setting->set('value', 2);
+				$setting->save();
+			}
 		case xPDOTransport::ACTION_INSTALL:
 			/* return false if conditions are not met */
 			$modx->log(xPDO::LOG_LEVEL_INFO, '[Resizer]');
 			if (version_compare(PHP_VERSION, '5.3.2', '>=')) {
-				// $phpver = true;
+				$phpver = true;
 				$modx->log(xPDO::LOG_LEVEL_INFO, 'PHP version: ' . PHP_VERSION . ' [<b>OK</b>]');
 			}
 			else {
-				// $phpver = false;
+				$phpver = false;
 				$modx->log(xPDO::LOG_LEVEL_INFO, 'PHP version: ' . PHP_VERSION);
 				$modx->log(xPDO::LOG_LEVEL_ERROR, 'Resizer requires PHP 5.3.2 or higher');
 			}
 
-			$success = FALSE;
+			$graphicsSuccess = false;
 			$modx->log(xPDO::LOG_LEVEL_INFO,'Availabe graphics libraries:');
-			if (class_exists('Gmagick', FALSE)) {
+
+			if (class_exists('Gmagick', false)) {
 				$magick = new Gmagick();
 				$version = $magick->getversion();
 				$modx->log(xPDO::LOG_LEVEL_INFO, "* {$version['versionString']}");
-				$success = TRUE;
+				$graphicsSuccess = true;
 			}
-			if (class_exists('Imagick', FALSE)) {
-				$magick = new Imagick();  // instantiate an object since getVersion isn't a static...
-				$version = $magick->getVersion();  // ...method in old versions of Imagick
-				$modx->log(xPDO::LOG_LEVEL_INFO, "* {$version['versionString']}");
-				$success = TRUE;
+
+			if (class_exists('Imagick', false)) {
+				$magick = new \Imagick();
+				$v = $magick->getVersion();
+				$modx->log(xPDO::LOG_LEVEL_INFO, "* {$v['versionString']}");
+				list($version, $year, $month, $day, $q, $website) = sscanf($v['versionString'], 'ImageMagick %s %04d-%02d-%02d %s %s');
+				$version = explode('-', $version);
+				$version = $version[0];
+				if (version_compare('6.2.9', $version) > 0) {
+					$modx->log(xPDO::LOG_LEVEL_ERROR, '- ImageMagick 6.2.9 or higher required. Disabling Imagick support.');
+					$setting = $modx->getObject('modSystemSetting', 'resizer.graphics_library');
+					$setting->set('value', 0);
+					$setting->save();
+				}
+				else {
+					$graphicsSuccess = true;
+					if (version_compare('6.5.7', $version) > 0) {
+						$modx->log(xPDO::LOG_LEVEL_ERROR, '- ImageMagick < 6.5.7: CMYK to RGB conversions not supported');
+					}
+					if (version_compare('6.5.4', $version) == 0) {
+						$modx->log(xPDO::LOG_LEVEL_ERROR, '- ImageMagick 6.5.4: buggy rotation. Affects rotated watermarks.');
+					}
+				}
 			}
+
 			if (function_exists('gd_info'))  {
 				$version = gd_info();
 				$modx->log(xPDO::LOG_LEVEL_INFO, "* GD: {$version['GD Version']}");
-				$success = TRUE;
+				if (version_compare(GD_VERSION, '2.0.1', '<')) {
+					$modx->log(xPDO::LOG_LEVEL_ERROR, '-- GD 2.0.1 or higher required');
+				}
+				else {
+					$graphicsSuccess = true;
+				}
 			}
-			if (!$success) {
-				$modx->log(xPDO::LOG_LEVEL_ERROR,'Resizer requires one of the following PHP extensions: Gmagick, Imagick, GD.');
+			if (!$graphicsSuccess) {
+				$modx->log(xPDO::LOG_LEVEL_ERROR, 'Resizer requires one of the following PHP extensions: Imagick, Gmagick, GD.');
 			}
-			// $success = $success && $phpver;
-			$success = TRUE;  // keep Resizer from preventing the install of a package which includes it
-
-			/* [[+code]] */
-			break;
-		case xPDOTransport::ACTION_UPGRADE:
-			/* return false if conditions are not met */
-			/* [[+code]] */
+			return $phpver && $graphicsSuccess;
 			break;
 
 		case xPDOTransport::ACTION_UNINSTALL:

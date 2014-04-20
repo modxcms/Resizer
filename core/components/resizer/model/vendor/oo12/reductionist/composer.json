@@ -1,0 +1,20 @@
+{
+	"name": "oo12/reductionist",
+	"description": "A simple, modern phpThumb",
+	"homepage": "https://github.com/oo12/Reductionist",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Jason Grant",
+			"email": "dadima@gmail.com"
+		}
+	],
+	"require": {
+		"imagine/imagine": "dev-develop"
+	},
+	"autoload": {
+		"psr-0": {
+			"Reductionist": "src/"
+		}
+	}
+}

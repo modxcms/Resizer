@@ -1,0 +1,12 @@
+{
+	"repositories": [
+    {
+        "type": "vcs",
+        "url": "https://github.com/oo12/Reductionist"
+    }
+],
+	"require": {
+		"oo12/reductionist": "master"
+	},
+	"minimum-stability": "dev"
+}

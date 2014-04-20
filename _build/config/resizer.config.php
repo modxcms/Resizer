@@ -6,8 +6,8 @@ $components = array(
 	'packageName' => 'Resizer',  /* No spaces, no dashes */
 	'packageNameLower' => $packageNameLower,
 	'packageDescription' => 'A lightweight, modern image resizer for MODX',
-	'version' => '0.5.1',
-	'release' => 'pl',
+	'version' => '1.0.0',
+	'release' => 'rc1',
 	'author' => 'Jason Grant',
 	'email' => '',
 	'authorUrl' => 'https://github.com/oo12',
@@ -51,7 +51,6 @@ $components = array(
 			'namespace' => 'resizer',
 			'xtype' => 'textfield',
 			'value' => 2,
-			// 'area' => 'area1',
 		),
 	),
 

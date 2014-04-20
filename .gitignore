@@ -1,2 +1,5 @@
+.gitignore
 no-git/*
 .DS_Store
+update
+composer.lock
