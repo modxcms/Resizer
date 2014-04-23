@@ -96,7 +96,7 @@ class Watermark extends ImagineAware {
 
 				$doRotate = !$isGmagick && $p['angle'] % 360;
 				if ($doRotate && $p['bgcolor'] === null && $isRImage) {  // if text will be rotated, use a transparent bg for better positioning
-					$p['bgcolor'] = '#ffffff';
+					$p['bgcolor'] = array(255, 255, 255);
 					$p['bgopacity'] = 0;
 				}
 				if ($p['bgcolor']) {  // if we have a bg color, add a bg box
@@ -106,7 +106,7 @@ class Watermark extends ImagineAware {
 					);
 					$wmbg->draw()->text($p['text'], $font, new Point($paddingX, $paddingY), 0);  // add text
 					if ($doRotate) {
-						$wmbg->rotate($p['angle'], self::$rgb->color('#fff', 100));
+						$wmbg->rotate($p['angle'], self::$rgb->color(array(255, 255, 255), 100));
 						$wmbgSize = $wmbg->getSize();
 						$wmbgWidth = $wmbgSize->getWidth();
 						$wmbgHeight = $wmbgSize->getHeight();
@@ -198,16 +198,20 @@ class Watermark extends ImagineAware {
 					}
 				}
 
-				// Opacity
-				if (!$isGmagick && $p['opacity'] < 100) {
-					$a = round((100 - $p['opacity']) * 2.55);  // calculate alpha (0:opaque - 255:transparent)
-					$mask = $imagine->create($wmSize, self::$rgb->color(array($a, $a, $a)));
-					$wm->applyMask($isRImage ? $mask->getImage() : $mask);
+				if ($isRImage && !$isGmagick && $p['opacity'] < 100) {  // for Imagick we can easily reduce transparency
+					try {
+						$wm->fade($p['opacity'] / 100);
+					}
+					catch (\Exception $e) {  // maybe. fallback for ImageMagick < 6.3.1
+						$a = round((100 - $p['opacity']) * 2.55);  // calculate alpha (0:opaque - 255:transparent)
+						$mask = $imagine->create($wmSize, self::$rgb->color(array($a, $a, $a)));
+						$wm->applyMask($mask->getImage());
+					}
 				}
 
 				// Rotation
 				if ($doRotate) {
-					$wm->rotate($p['angle'], self::$rgb->color('#fff', 100));
+					$wm->rotate($p['angle'], self::$rgb->color(array(255, 255, 255), 100));
 					$wmSize = $wm->getSize();
 					if ($wmSize->getWidth() > $imgWidth || $wmSize->getHeight() > $imgHeight) {  // one more check. Shouldn't be necessary, but it sometimes is
 						$wm = $wm->thumbnail(new Box($imgWidth, $imgHeight));
@@ -250,7 +254,12 @@ class Watermark extends ImagineAware {
 
 				}
 
-				$image->paste($isRImage ? $wm->getImage() : $wm, $wmStartPoint);
+				if ($isRImage) {
+					$image->paste($wm->getImage(), $wmStartPoint);
+				}
+				else {  // GD
+					imagecopymerge($image->getGdResource(), $wm->getGdResource(), $wmStartPoint->getX(), $wmStartPoint->getY(), 0, 0, $wmWidth, $wmHeight, $p['opacity']);
+				}
 			}
 			catch(\Exception $e) {
 				$this->debugmessages[] = '*** Image Watermark Error: ' . $e->getMessage();

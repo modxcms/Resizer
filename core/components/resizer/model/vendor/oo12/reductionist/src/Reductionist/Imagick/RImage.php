@@ -80,21 +80,21 @@ class RImage extends RAbstractImage
 	}
 
 
-	protected function load($size = null) {
-		$handle = fopen($this->filename, 'r');
+	public function fade($opacity) {
+		$this->image->getImagick()->setImageOpacity($opacity);
+	}
 
+
+	protected function load($size = null) {
 		try {
 			$magick = new \Imagick();
 			if ($this->format === IMG_JPG && $size !== null) {
 				$magick->setOption('jpeg:size', $size[0] . 'x' . $size[1]);  // some versions of Imagick only respond to this...
 				$magick->setSize($size[0], $size[1]);  // ...and others to this
 			}
-			$magick->readImageFile($handle);
-			$magick->setImageFilename($this->filename);
-			fclose($handle);
+			$magick->readImage($this->filename);
 		}
 		catch (\Exception $e) {
-			fclose($handle);
 			throw new \Imagine\Exception\RuntimeException("Imagick: Unable to open image {$this->filename}. {$e->getMessage()}", $e->getCode(), $e);
 		}
 		if ($this->format === IMG_JPG && $size !== null) {
