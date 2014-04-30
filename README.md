@@ -1,13 +1,15 @@
-Resizer v0.5.0-pl
+Resizer v1.0.0-pl
 ==========
 
-A lightweight, modern image resizer for MODX. Built on [Imagine](https://github.com/avalanche123/Imagine), Resizer supports the Gmagick, Imagick and GD extensions and is considerably faster than phpThumb for image sizing and cropping operations. Available from the MODX [Extras Repo](http://modx.com/extras/package/resizer).
+A simple, modern image resizer for MODX. Built on [Imagine](https://github.com/avalanche123/Imagine), Resizer supports the Gmagick, Imagick and GD extensions and can be considerably faster than phpThumb for image sizing and cropping operations. Available from the MODX [Extras Repo](http://modx.com/extras/package/resizer).
 
 Requirements
 -----------
 
 * PHP 5.3.2 or higher
-* One or more of the following PHP extensions: Gmagick, Imagick, GD2
+* One or more of the following PHP extensions: Gmagick, Imagick (with ImageMagick 6.2.9 or higher), GD 2.0.1 or higher
+
+Both Imagick and Gmagick offer much better performance and lower memory requirements than GD, especially if you're using a relatively recent version of [ImageMagick](http://www.imagemagick.org/)/[GraphicsMagick](http://www.graphicsmagick.org/).  I think Imagick is the best overall: good performance and good support for all features.  Gmagick is a bit faster but doesn’t have full support for opacity, though this only matters if you’re adding partially transparent backgrounds to PNGs or using watermarks.  If your site does lots of image resizing—especially thumbnailing large jpegs—Imagick or Gmagick will be _much_ faster.
 
 Usage
 -----
@@ -16,7 +18,7 @@ Resizer is a PHP class and can only be called from a snippet.  If you’re not d
 
 ### pThumb
 
-Change the ```phpthumbof.use_resizer``` system setting to Yes to enable Resizer globally, or use ```[[phpthumbof? &useResizer=`1` ...]]``` for a particular instance.  See the Options section below for supported options.  Other than that, use it just like you always have.
+Change the ```phpthumbof.use_resizer``` system setting to Yes to enable Resizer globally, or use ```[[pthumb? &useResizer=`1` ...]]``` for a particular instance.  See the [Options](#options) section below for supported options.  Other than that, use it just like you always have.
 
 ### Snippet Developers
 
@@ -38,7 +40,7 @@ Sample code:
 Options
 --------
 
-Resizer only supports a subset of [phpThumb options](http://phpthumb.sourceforge.net/demo/docs/phpthumb.readme.txt), the most useful and commonly used ones.  Many of phpThumb’s options are arguably better handled now or in the near future with CSS transforms and filters anyway, so I haven’t implemented these.  But if there’s one you’ve just _got_ to have, open an issue :-)
+Resizer only supports a subset of [phpThumb options](http://phpthumb.sourceforge.net/demo/docs/phpthumb.readme.txt), the most useful and commonly used ones.  Many of phpThumb’s options are arguably better handled now or in the near future with CSS transforms and filters anyway, so I haven’t implemented these.  But if there’s one you’ve just _got_ to have, open an issue.
 
 ### Supported phpThumb Options
 
@@ -61,7 +63,9 @@ Resizer only supports a subset of [phpThumb options](http://phpthumb.sourceforge
 	<tr><td><b>far</b></td><td>Force Aspect Ratio. Width and height must both be specified. Scales an image to fit inside the box specified by width and height, then adds a solid color (white by default, or <b>bg</b>) if necessary to make the output image exactly width x height. The value given indicates how the image will be positioned inside the box. l=left, r=right, t=top, b=bottom, c=center</td><td><b>tl</b>, <b>t</b>, <b>tr</b><br><b>l</b>, <b>c</b>, <b>r</b><br><b>bl</b>, <b>b</b>, <b>br</b></td></tr>
 	<tr><td><b>q</b></td><td>JPEG quality</td><td>integer (default: <b>75</b>)</td></tr>
 	<tr><td><b>zc</b></td><td>Zoom Crop. Sizes an image to fill the given box (both a width and a height must be specified) and crops off any extra.  The value indicates the portion of the image you’d like to retain: top left, center, bottom right, etc. (You can also use <b>1</b> for center.) Overrides <b>far</b>. Unlike with phpThumb, all these options work with GD as well.</td><td><b>tl</b>, <b>t</b>, <b>tr</b><br><b>l</b>, <b>c</b>, <b>r</b><br><b>bl</b>, <b>b</b>, <b>br</b></td></tr>
-	<tr><td><b>fltr[]</b></td> <td>usm — unsharp mask. Amount, raduis and threshold are fixed and can’t be specified<br>Other filters — not supported</td> <td></td></tr>
+	<tr><td><b>fltr[]=usm</b></td> <td>Unsharp mask. Amount, radius and threshold are fixed and can’t be specified.</td> <td></td></tr>
+	<tr><td><b>fltr[]=wmt</b></td> <td>Text watermark. Parameters mostly follow <a href="https://github.com/JamesHeinrich/phpThumb/blob/adcaf2f0d18f331c44eafa7bc359f8d47d1ae235/docs/phpthumb.readme.txt#L367">phpThumb</a>, except tiling isn’t supported. The font path should be absolute, or relative to MODX assets path, core path, or {core path}/model/phpthumb/fonts. Leave the font blank for the default, Fira Sans.</td> <td></td></tr>
+	<tr><td><b>fltr[]=wmi</b></td> <td>Image watermark. Parameters mostly follow <a href="https://github.com/JamesHeinrich/phpThumb/blob/adcaf2f0d18f331c44eafa7bc359f8d47d1ae235/docs/phpthumb.readme.txt#L346">phpThumb</a>, except tiling isn’t supported. The watermark image path should be absolute, or relative to MODX assets path, core path, or {core path}/model/phpthumb/images.</td> <td></td></tr>
 </table>
 
 *Output file type* — Resizer doesn’t explicitly support phpThumb’s <b>f</b> option, but instead infers the proper image type from the output filename’s extension. Some wrappers like pThumb handle the <b>f</b> option in the usual way.<br>  Supported formats: jpg (or jpeg), png, gif, wbmp, xbm.
@@ -72,14 +76,13 @@ Resizer only supports a subset of [phpThumb options](http://phpthumb.sourceforge
 	<tr><th>Option</th><th>Description</th><th>Value/Unit</th></tr>
 	<tr><td><b>scale</b></td><td>Convenient when creating retina images. Any dimensions given will be multiplied by this number internally. If <b>aoe</b> is off—the default—and the input image doesn’t have sufficient resolution, <b>scale</b> will be adjusted downward so you get as much output resolution as possible without scaling the image up.</td><td>number &gt; 1</td></tr>
 	<tr><td><b>qmax</b></td><td>An upper limit jpeg quality. If the requested size exceeds the input image resolution and <b>aoe</b> is off, Resizer can increase the jpeg quality in an attempt to compensate. Quality begins at q (input resolution = output resolution) and reaches qmax when the input resolution is 1/2 of the requested output resolution.</td><td>1–100 (should be greater than q)</td></tr>
-	<tr><td><b>strip</b></td><td>Convert the image to sRGB, then strip the color profile and EXIF metadata. An embedded profile and EXIF info can add 10KB or more to an image. GD doesn’t support color profiles.</td><td><b>1</b> (on)</td></tr>
 </table>
 
 
 Settings
 --------
 
-Resizer provides one system setting, ```resizer.graphics_library```.  Normally you’ll leave this set at **2** (auto).  In that case Resizer will check the following extensions in this order and pick the first one it finds: Gmagick, Imagick, GD. Setting it to **1** will restrict it to Imagick or GD, **0** to GD only.
+Resizer provides one system setting, ```resizer.graphics_library```.  Normally you’ll leave this set at **2** (auto).  In that case Resizer will check the following extensions in this order and pick the first one it finds: Imagick, Gmagick, GD. Setting it to **1** will restrict it to Gmagick or GD, **0** to GD only.
 
 
 An Example with Retina Images

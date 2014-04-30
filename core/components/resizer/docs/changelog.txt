@@ -1,7 +1,7 @@
 Resizer Changelog
 
-v1.0.0-rc1
-------------
+v1.0.0-pl  [29.04.2014]
+-----------------------
 
 - Structural overhaul: core functionality now bundled as a Composer
   package (oo12/Reductionist)
@@ -11,6 +11,7 @@ v1.0.0-rc1
   (hat tip funkbilly)
 - Add auto CMYK to RGB conversion and strip embedded profiles/metadata
   to reduce thumbnail size
+- Improve handling of rounding discrepancies when calculating dimensions
 - Fix quality scaling when zoom cropping
 
 
