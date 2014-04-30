@@ -21,7 +21,6 @@ protected $imagine;
 protected $gLib;
 static protected $assetpaths;
 static protected $palette;
-static protected $topLeft;
 static protected $maxsize;
 
 /*
@@ -120,7 +119,7 @@ static public function startPoint($opt, $containerDims, $imageDims) {
 		$x = (int) (($containerDims[0] - $imageDims[0]) / 2);
 		$y = (int) (($containerDims[1] - $imageDims[1]) / 2);
 	}
-	if ($x < 0)  { $x = 0; }
+	if ($x < 0)  { $x = 0; }  // a negative value wouldn't make sense
 	if ($y < 0)  { $y = 0; }
 	return new \Imagine\Image\Point($x, $y);
 }
@@ -182,7 +181,7 @@ public function processImage($input, $output, $options = array()) {
 			return false;
 		}
 
-/* source crop */
+/* source crop (start) */
 		if (isset($options['sw']) || isset($options['sh'])) {
 			if (empty($options['sw']) || $options['sw'] > $origWidth) {
 				$newWidth = $origWidth;
@@ -217,18 +216,19 @@ public function processImage($input, $output, $options = array()) {
 			}
 		}
 		$origAR = $origWidth / $origHeight;  // original image aspect ratio
+		$origAspect = round($origAR, 2);
 
+/* input dimensions */
 		// use width/height if specified
 		if (isset($options['w']))  { $width = $options['w']; }
 		if (isset($options['h']))  { $height = $options['h']; }
 
 		// override with any orientation-specific dimensions
-		$aspect = round($origAR, 2);
-		if ($aspect > 1) {  // landscape
+		if ($origAspect > 1) {  // landscape
 			if (isset($options['wl']))  { $width = $options['wl']; }
 			if (isset($options['hl']))  { $height = $options['hl']; }
 		}
-		elseif ($aspect < 1) {  // portrait
+		elseif ($origAspect < 1) {  // portrait
 			if (isset($options['wp']))  { $width = $options['wp']; }
 			if (isset($options['hp']))  { $height = $options['hp']; }
 		}
@@ -272,14 +272,15 @@ public function processImage($input, $output, $options = array()) {
 
 		if (empty($options['zc']) || !$bothDims) {
 /* non-zc sizing */
-			if ($newAR < $origAR) {  // Make sure AR doesn't change. Smaller dimension...
+			$newAspect = round($newAR, 2);  // ignore small differences
+			if ($newAspect < $origAspect) {  // Make sure AR doesn't change. Smaller dimension...
 				if ($origWidth < $options['w'] && empty($options['aoe'])) {
 					$options['w'] = $width = $origWidth;
 					$options['h'] = $width / $newAR;
 				}
 				$height = $width / $origAR;
 			}
-			elseif ($newAR > $origAR) {  // ...limits larger
+			elseif ($newAspect > $origAspect) {  // ...limits larger
 				if ($origHeight < $options['h'] && empty($options['aoe'])) {
 					$options['h'] = $height = $origHeight;
 					$options['w'] = $height * $newAR;
@@ -319,19 +320,19 @@ public function processImage($input, $output, $options = array()) {
 			}
 
 			// make sure final image will cover the crop box
-			if ($height * $origAR > $width)  {  // needs horizontal cropping
-				$newWidth = round($height * $origAR);
-				$width = round($width);
-				$newHeight = $height = round($height);
+			$width = round($width);
+			$height = round($height);
+			$newWidth = round($height * $origAR);
+			$newHeight = round($width / $origAR);
+			if ($newWidth > $width)  {  // needs horizontal cropping
+				$newHeight = $height;
 			}
-			elseif ($width / $origAR > $height)  {  // needs vertical cropping
-				$newHeight = round($width / $origAR);
-				$height = round($height);
-				$newWidth = $width = round($width);
+			elseif ($newHeight > $height)  {  // needs vertical cropping
+				$newWidth = $width;
 			}
 			else {  // no cropping needed, same AR
-				$newWidth = $width = round($width);
-				$newHeight = $height = round($height);
+				$newWidth = $width;
+				$newHeight = $height;
 			}
 
 			$cropStart = Reductionist::startPoint(
@@ -346,17 +347,24 @@ public function processImage($input, $output, $options = array()) {
 			$height = $newHeight;
 		}
 
+/* source crop (finish) */
 		if (isset($scBox)) {
 			$scale = max($width / $origWidth, $height / $origHeight);
 			if ($scale <= 0.5 && $this->gLib && $image->getFormat() === IMG_JPG) {
-				$scaleBox = new Box(round($inputParams['width'] * $scale), round($inputParams['height'] * $scale));
-				$image->resize($scaleBox);
+				$image->resize(new Box(round($inputParams['width'] * $scale), round($inputParams['height'] * $scale)));
 				$scStart = new \Imagine\Image\Point(round($cropStartX * $scale), round($cropStartY * $scale));
+				$scBox = new Box(round($scBox->getWidth() * $scale), round($scBox->getHeight() * $scale));
 			}
 			else {
 				$scStart = new \Imagine\Image\Point($cropStartX, $cropStartY);
 			}
 			$image->crop($scStart, $scBox);
+			if (abs($scBox->getWidth() - $width) == 1) {  // snap a 1px rounding error to the source crop box
+				$this->width = $width = $scBox->getWidth();
+			}
+			if (abs($scBox->getHeight() - $height) == 1) {
+				$this->height = $height = $scBox->getHeight();
+			}
 		}
 
 /* resize, aoe */
@@ -369,18 +377,18 @@ public function processImage($input, $output, $options = array()) {
 		elseif (isset($options['qmax']) && empty($options['aoe']) && isset($options['q']) && $outputIsJpg) {
 			// undersized input image. We'll increase q towards qmax depending on how much it's undersized
 			$sizeRatio = $requestedMP / (isset($cropBox) ? $this->width * $this->height : $width * $height);
-			if ($sizeRatio >= 3) {
+			if ($sizeRatio >= 2) {
 				$options['q'] = $options['qmax'];
 			}
 			elseif ($sizeRatio > 1) {
-				$options['q'] += round(($options['qmax'] - $options['q']) * ($sizeRatio - 1) / 2);
+				$options['q'] += round(($options['qmax'] - $options['q']) * ($sizeRatio - 1));
 			}
 		}
 
 /* crop */
 		if (isset($cropBox))  { $image->crop($cropStart, $cropBox); }
 
-/* filters */
+/* filters (start) */
 		if (!empty($options['fltr'])) {
 			if (!is_array($options['fltr'])) {
 				$options['fltr'] = array($options['fltr']);  // in case somebody did fltr= instead of fltr[]=
@@ -402,7 +410,6 @@ public function processImage($input, $output, $options = array()) {
 /* bg */
 		if ( $hasBG = (isset($options['bg']) && !$outputIsJpg) || isset($farBox)) {
 			if (self::$palette === null)  { self::$palette = new \Imagine\Image\Palette\RGB(); }
-			if (self::$topLeft === null)  { self::$topLeft = new \Imagine\Image\Point(0, 0); }
 			if (isset($options['bg']))  {
 				$bgColor = explode('/', $options['bg']);
 				$bgColor[1] = isset($bgColor[1]) ? $bgColor[1] : 100;
@@ -416,16 +423,13 @@ public function processImage($input, $output, $options = array()) {
 			else  { $bgBox = new Box($width, $height); }
 			$image = $this->imagine
 				->create($bgBox, self::$palette->color($bgColor[0], 100 - $bgColor[1]))
-				->paste($this->gLib ? $image->getImage() : $image, isset($farPoint) ? $farPoint : self::$topLeft);
+				->paste($this->gLib ? $image->getImage() : $image, isset($farPoint) ? $farPoint : new \Imagine\Image\Point(0, 0));
 		}
 
+/* filters (finish) */
 		if (isset($transformation) && !empty($doApply)) {  // apply any filters
-			try {
-				$transformation->apply($image);
-			}
-			catch (\Exception $e) {
-				$this->debugmessages[] = $e->getMessage();
-			}
+			try { $transformation->apply($image); }
+			catch (\Exception $e) { $this->debugmessages[] = $e->getMessage(); }
 		}
 
 /* debug info */
@@ -444,7 +448,7 @@ public function processImage($input, $output, $options = array()) {
 				$this->debugmessages[] = "JPEG prescale - w: {$image->prescalesize[0]} | h: {$image->prescalesize[1]} " . sprintf("(%2.2f MP)", $image->prescalesize[0] * $image->prescalesize[1] / 1e6);
 			}
 			if (isset($scBox)) {
-				$this->debugmessages[] = "Source area - start: ($cropStartX, $cropStartY) | box: $scBox";
+				$this->debugmessages[] = "Source area - start: $scStart | box: $scBox";
 			}
 			if (isset($wRequested)) {
 				$this->debugmessages[] = "Requested - w: " . round($wRequested) . ' | h: ' . round($hRequested);
@@ -480,14 +484,15 @@ public function processImage($input, $output, $options = array()) {
 /* error handler */
 	catch(\Imagine\Exception\Exception $e) {
 		$this->debugmessages[] = "Input file: $input";
-		$this->debugmessages[] = 'Input options: ' . substr(var_export($inputParams['options'], true), 7, -3);
-		$this->debugmessages[] = '*** Error *** ' . $e->getMessage();
+		$this->debugmessages[] = 'Input options: ' . self::formatDebugArray($inputParams['options']);
+		$this->debugmessages[] = "*** Error *** {$e->getMessage()}";
 		return false;
 	}
 
 /* debug info (timing) */
 	if ($this->debug) {
 		$this->debugmessages[] = "Wrote $output";
+		$this->debugmessages[] = "Dimensions: {$this->width}x{$this->height} px";
 		$this->debugmessages[] = 'Execution time: ' . round((microtime(true) - $startTime - $debugTime) * 1e3) . ' ms';
 	}
 	return true;

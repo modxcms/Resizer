@@ -46,7 +46,7 @@ class RImagine implements ImagineInterface
 			return new RImage($magick, $color['palette'], self::$emptyBag, array($width, $height));
 		}
 		catch (\Exception $e) {
-			throw new \Imagine\Exception\RuntimeException('Imagick: Could not create empty image ' . $e->getMessage(), $e->getCode(), $e);
+			throw new \Imagine\Exception\RuntimeException("Imagick: Could not create empty image {$e->getMessage()}", $e->getCode(), $e);
 		}
 	}
 
@@ -89,7 +89,7 @@ class RImagine implements ImagineInterface
 			$palette = self::createPalette($magick->getImageColorspace());
 		}
 		catch (\ImagickException $e) {
-			throw new RuntimeException('Imagick: Could not load image from string. ' . $e->getMessage(), $e->getCode(), $e);
+			throw new RuntimeException("Imagick: Could not load image from string. {$e->getMessage()}", $e->getCode(), $e);
 		}
 		return new RImage($magick, $palette, self::$emptyBag);
 	}
@@ -105,7 +105,7 @@ class RImagine implements ImagineInterface
 			$magick->readImageFile($resource);
 		}
 		catch (\ImagickException $e) {
-			throw new RuntimeException('Imagick: Could not read image from resource. ' . $e->getMessage(), $e->getCode(), $e);
+			throw new RuntimeException("Imagick: Could not read image from resource. {$e->getMessage()}", $e->getCode(), $e);
 		}
 
 		$palette = self::createPalette($magick->getImageColorspace());

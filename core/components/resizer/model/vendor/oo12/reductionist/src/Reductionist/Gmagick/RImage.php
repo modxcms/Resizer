@@ -28,9 +28,9 @@ class RImage extends RAbstractImage
 		$height = $size->getHeight();
 		if ($this->image === null) { $this->load(array($width, $height)); }
 
-		$this->image->getGmagick()
-			->scaleimage($width, $height)
-			->stripimage();
+		$magick = $this->image->getGmagick();
+		$magick->scaleimage($width, $height);
+		$magick->stripimage();
 		$this->size = array($width, $height);
 
 		return $this;
@@ -47,7 +47,7 @@ class RImage extends RAbstractImage
 			$this->image->getGmagick()->cropimage($width, $height, $start->getX(), $start->getY());
 		}
 		catch (\GmagickException $e) {
-			throw new \Imagine\Exception\RuntimeException('Gmagick: Crop operation failed', $e->getCode(), $e);
+			throw new \Imagine\Exception\RuntimeException("Gmagick: Crop operation failed. {$e->getMessage()}", $e->getCode(), $e);
 		}
 		$this->size = array($width, $height);
 
@@ -56,7 +56,6 @@ class RImage extends RAbstractImage
 
 
 	protected function load($size = null) {
-
 		try {
 			$magick = new \Gmagick();
 			if ($this->format === IMG_JPG && $size !== null) {

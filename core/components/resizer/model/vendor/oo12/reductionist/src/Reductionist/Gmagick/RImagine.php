@@ -51,7 +51,7 @@ class RImagine implements ImagineInterface
 			return new RImage($magick, $palette, self::$emptyBag, array($width, $height));
 		}
 		catch (\Exception $e) {
-			throw new \Imagine\Exception\RuntimeException('Gmagick: could not create empty image. ' . $e->getMessage(), $e->getCode(), $e);
+			throw new \Imagine\Exception\RuntimeException("Gmagick: could not create empty image. {$e->getMessage()}", $e->getCode(), $e);
 		}
 	}
 
@@ -68,24 +68,6 @@ class RImagine implements ImagineInterface
 	}
 
 
-	static public function getColor($color) {
-		if ($color === null) {
-			$palette = self::$rgb;
-			$color = '#ffffff';
-			$alpha = 0;
-		}
-		else {
-			$palette = $color->getPalette();
-			$alpha = $color->getAlpha() / 100;
-		}
-		return array(
-			'palette' => $palette,
-			'color' => (string) $color,
-			'alpha' => $alpha
-		);
-	}
-
-
 	public function load($string) {
 		try {
 			$magick = new \Gmagick();
@@ -93,7 +75,7 @@ class RImagine implements ImagineInterface
 			$palette = self::createPalette($magick->getImageColorspace());
 		}
 		catch (\GmagickException $e) {
-			throw new RuntimeException('Gmagick: Could not load image from string. ' . $e->getMessage(), $e->getCode(), $e);
+			throw new RuntimeException("Gmagick: Could not load image from string. {$e->getMessage()}", $e->getCode(), $e);
 		}
 		return new RImage($magick, $palette, self::$emptyBag);
 	}

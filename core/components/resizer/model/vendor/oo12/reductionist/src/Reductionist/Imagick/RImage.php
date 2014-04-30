@@ -81,6 +81,8 @@ class RImage extends RAbstractImage
 
 
 	public function fade($opacity) {
+		if ($this->image === null) { $this->load(); }
+
 		$this->image->getImagick()->setImageOpacity($opacity);
 	}
 
