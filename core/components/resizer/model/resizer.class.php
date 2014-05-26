@@ -35,6 +35,7 @@ class Resizer extends Reductionist
 		$this->debugmessages = str_replace('Reductionist', 'Resizer', $this->debugmessages);
 		// Add some common MODX search paths for watermark images and fonts
 		self::$assetpaths[] = $modx->getOption('assets_path');
+		self::$assetpaths[] = $modx->getOption('base_path');
 		self::$assetpaths[] = MODX_CORE_PATH;
 		self::$assetpaths[] = MODX_CORE_PATH . 'model/phpthumb/fonts/';
 		self::$assetpaths[] = MODX_CORE_PATH . 'model/phpthumb/images/';
