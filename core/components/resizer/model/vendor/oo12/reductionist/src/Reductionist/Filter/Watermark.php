@@ -257,8 +257,17 @@ class Watermark extends ImagineAware {
 				if ($isRImage) {
 					$image->paste($wm->getImage(), $wmStartPoint);
 				}
-				else {  // GD
-					imagecopymerge($image->getGdResource(), $wm->getGdResource(), $wmStartPoint->getX(), $wmStartPoint->getY(), 0, 0, $wmWidth, $wmHeight, $p['opacity']);
+				elseif ($p['opacity'] >= 100) {  // GD
+					$image->paste($wm, $wmStartPoint);
+				}
+				else {  // GD: paste with opacity
+					$orig = $image->getGdResource();
+					$img = imagecreatetruecolor($wmWidth, $wmHeight);
+					imagecopy($img, $orig, 0, 0, $wmStartPoint->getX(), $wmStartPoint->getY(), $wmWidth, $wmHeight);
+					imagecopy($img, $wm->getGdResource(), 0, 0, 0, 0, $wmWidth, $wmHeight);
+					imagecopymerge($orig, $img, $wmStartPoint->getX(), $wmStartPoint->getY(), 0, 0, $wmWidth, $wmHeight, $p['opacity']);
+					imagedestroy($img);
+					unset($orig);
 				}
 			}
 			catch(\Exception $e) {
