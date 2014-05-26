@@ -1,5 +1,12 @@
 Resizer Changelog
 
+v1.0.1-pl  [26.05.2014]
+-----------------------
+
+- [#6] GD: Fix PNG transparency on watermark images
+- Add MODX base_path to search list for watermark assets
+
+
 v1.0.0-pl  [29.04.2014]
 -----------------------
 

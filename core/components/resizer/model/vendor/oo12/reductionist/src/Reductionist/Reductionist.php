@@ -11,7 +11,7 @@ use Imagine\Image\Box;
 
 class Reductionist {
 
-public $debugmessages = array('Reductionist v1.0.0');
+public $debugmessages = array('Reductionist v1.0.1');
 public $debug = false;  //enable generation of debugging messages
 public $defaultQuality = 80;
 public $width;
