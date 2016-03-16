@@ -404,6 +404,9 @@ public function processImage($input, $output, $options = array()) {
 					$doApply = true;
 					$transformation->add(new Filter\Watermark($filter, $filterlog));
 				}
+				elseif ($filter[0] === 'gray') {
+					$image->effects()->grayscale();
+				}
 			}
 		}
 
