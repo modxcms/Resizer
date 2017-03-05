@@ -19,7 +19,7 @@
  * Place, Suite 330, Boston, MA 02111-1307 USA
  **/
 
-require 'vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 
 use Reductionist\Reductionist;
 
